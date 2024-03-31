@@ -1,7 +1,7 @@
-use crate::reader::error::SyntaxError;
-use crate::common::is_name_start_char;
+use crate::attribute::OwnedAttribute;
+use crate::common::{is_name_start_char, is_whitespace_char};
 use crate::namespace;
-use crate::{attribute::OwnedAttribute, common::is_whitespace_char};
+use crate::reader::error::SyntaxError;
 
 use crate::reader::lexer::Token;
 
@@ -38,7 +38,7 @@ impl PullParser {
                     }
                     self.buf.push(c);
                     self.into_state_continue(State::InsideOpeningTag(OpeningTagSubstate::InsideAttributeName))
-                }
+                },
                 _ => Some(self.error(SyntaxError::UnexpectedTokenInOpeningTag(t))),
             },
 

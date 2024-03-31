@@ -1,12 +1,9 @@
-use crate::Encoding;
 use crate::reader::lexer::Token;
+use crate::Encoding;
 
 use std::borrow::Cow;
-use std::error;
 use std::error::Error as _;
-use std::fmt;
-use std::io;
-use std::str;
+use std::{error, fmt, io, str};
 
 use crate::common::{Position, TextPosition};
 use crate::util;
@@ -98,7 +95,7 @@ impl SyntaxError {
             Self::CannotUndefinePrefix(ref ln) => format!("Cannot undefine prefix '{ln}'").into(),
             Self::ConflictingEncoding(a, b) => format!("Declared encoding {a}, but uses {b}").into(),
             Self::InvalidCharacterEntity(num) => format!("Invalid character U+{num:04X}").into(),
-            Self::InvalidDefaultNamespace(ref name) => format!( "Namespace '{name}' cannot be default").into(),
+            Self::InvalidDefaultNamespace(ref name) => format!("Namespace '{name}' cannot be default").into(),
             Self::InvalidNamePrefix(ref prefix) => format!("'{prefix}' cannot be an element name prefix").into(),
             Self::InvalidNumericEntity(ref v) => format!("Invalid numeric entity: {v}").into(),
             Self::InvalidQualifiedName(ref e) => format!("Qualified name is invalid: {e}").into(),
@@ -161,7 +158,8 @@ impl Error {
     #[cold]
     #[doc(hidden)]
     #[allow(deprecated)]
-    #[must_use] pub fn msg(&self) -> &str {
+    #[must_use]
+    pub fn msg(&self) -> &str {
         use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8};
         match &self.kind {
             Io(io_error) => io_error.description(),

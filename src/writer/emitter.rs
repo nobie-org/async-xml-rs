@@ -1,8 +1,6 @@
 use std::error::Error;
-use std::fmt;
-use std::io;
 use std::io::prelude::*;
-use std::result;
+use std::{fmt, io, result};
 
 use crate::attribute::Attribute;
 use crate::common;

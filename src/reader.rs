@@ -9,20 +9,18 @@ use std::result;
 
 use crate::common::{Position, TextPosition};
 
-pub use self::config::ParserConfig;
-pub use self::config::ParserConfig2;
+pub use self::config::{ParserConfig, ParserConfig2};
 pub use self::error::{Error, ErrorKind};
 pub use self::events::XmlEvent;
 
 use self::parser::PullParser;
 
 mod config;
+mod error;
 mod events;
+mod indexset;
 mod lexer;
 mod parser;
-mod indexset;
-mod error;
-
 
 /// A result type yielded by `XmlReader`.
 pub type Result<T, E = Error> = result::Result<T, E>;
@@ -69,7 +67,7 @@ impl<R: Read> EventReader<R> {
                 XmlEvent::StartElement { .. } => depth += 1,
                 XmlEvent::EndElement { .. } => depth -= 1,
                 XmlEvent::EndDocument => unreachable!(),
-                _ => {}
+                _ => {},
             }
         }
 
@@ -105,8 +103,8 @@ impl<B: Read> Position for EventReader<B> {
 }
 
 impl<R: Read> IntoIterator for EventReader<R> {
-    type Item = Result<XmlEvent>;
     type IntoIter = Events<R>;
+    type Item = Result<XmlEvent>;
 
     fn into_iter(self) -> Events<R> {
         Events { reader: self, finished: false }
@@ -138,7 +136,6 @@ impl<R: Read> Events<R> {
     ///
     /// It's not recommended to use it while the events are still being parsed
     pub fn source_mut(&mut self) -> &mut R { &mut self.reader.source }
-
 }
 
 impl<R: Read> FusedIterator for Events<R> {

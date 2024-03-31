@@ -1,5 +1,5 @@
-use crate::reader::error::SyntaxError;
 use crate::common::is_whitespace_char;
+use crate::reader::error::SyntaxError;
 use crate::reader::events::XmlEvent;
 use crate::reader::lexer::Token;
 
@@ -146,9 +146,9 @@ impl PullParser {
                         self.into_state(State::InsideCData, next_event)
                     },
 
-                    _ => Some(self.error(SyntaxError::UnexpectedToken(t)))
+                    _ => Some(self.error(SyntaxError::UnexpectedToken(t))),
                 }
-            }
+            },
         }
     }
 
@@ -178,7 +178,7 @@ impl PullParser {
             Token::CommentStart => {
                 let next_event = self.set_encountered(Encountered::Comment);
                 self.into_state(State::InsideComment, next_event)
-            }
+            },
 
             Token::OpeningTagStart => {
                 let next_event = self.set_encountered(Encountered::Element);

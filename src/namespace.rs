@@ -132,7 +132,7 @@ impl Namespace {
             Entry::Vacant(ve) => {
                 ve.insert(uri.into());
                 true
-            }
+            },
         }
     }
 
@@ -185,8 +185,8 @@ pub type NamespaceMappings<'a> = Map<
 >;
 
 impl<'a> IntoIterator for &'a Namespace {
-    type Item = UriMapping<'a>;
     type IntoIter = NamespaceMappings<'a>;
+    type Item = UriMapping<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         fn mapper<'a>((prefix, uri): (&'a String, &'a String)) -> UriMapping<'a> {
@@ -436,8 +436,8 @@ impl<'a> Iterator for NamespaceStackMappings<'a> {
 }
 
 impl<'a> IntoIterator for &'a NamespaceStack {
-    type Item = UriMapping<'a>;
     type IntoIter = NamespaceStackMappings<'a>;
+    type Item = UriMapping<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
         NamespaceStackMappings {

@@ -233,10 +233,10 @@ impl Default for ParserConfig2 {
             allow_multiple_root_elements: true,
             max_entity_expansion_length: DEFAULT_MAX_ENTITY_EXPANSION_LENGTH,
             max_entity_expansion_depth: DEFAULT_MAX_ENTITY_EXPANSION_DEPTH,
-            max_attributes: 1<<16,
-            max_attribute_length: 1<<30,
-            max_data_length: 1<<30,
-            max_name_length: 1<<18,
+            max_attributes: 1 << 16,
+            max_attribute_length: 1 << 30,
+            max_data_length: 1 << 30,
+            max_name_length: 1 << 18,
         }
     }
 }
@@ -293,10 +293,7 @@ impl ParserConfig2 {
 impl From<ParserConfig> for ParserConfig2 {
     #[inline]
     fn from(c: ParserConfig) -> Self {
-        Self {
-            c,
-            ..Default::default()
-        }
+        Self { c, ..Default::default() }
     }
 }
 

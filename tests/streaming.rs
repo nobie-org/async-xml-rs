@@ -2,8 +2,7 @@
 
 use std::io::{Cursor, Write};
 
-use xml::reader::ParserConfig;
-use xml::reader::XmlEvent;
+use xml::reader::{ParserConfig, XmlEvent};
 use xml::EventReader;
 
 macro_rules! assert_match {

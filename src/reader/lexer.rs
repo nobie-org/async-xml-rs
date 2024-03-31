@@ -2,16 +2,13 @@
 //!
 //! This module is for internal use. Use `xml::pull` module to do parsing.
 
-
-use crate::reader::ErrorKind;
+use crate::common::{is_name_char, is_whitespace_char, is_xml10_char, is_xml11_char, Position, TextPosition};
 use crate::reader::error::SyntaxError;
-use std::collections::VecDeque;
-use std::fmt;
-use std::io::Read;
-use std::result;
-use crate::common::{is_name_char, is_whitespace_char, Position, TextPosition, is_xml10_char, is_xml11_char};
-use crate::reader::Error;
+use crate::reader::{Error, ErrorKind};
 use crate::util::{CharReader, Encoding};
+use std::collections::VecDeque;
+use std::io::Read;
+use std::{fmt, result};
 
 use super::ParserConfig2;
 
@@ -250,7 +247,7 @@ impl Lexer {
             reader: CharReader::new(),
             pos: TextPosition::new(),
             head_pos: TextPosition::new(),
-            char_queue: VecDeque::with_capacity(4),  // TODO: check size
+            char_queue: VecDeque::with_capacity(4), // TODO: check size
             st: State::Normal,
             normal_state: State::Normal,
             inside_token: false,
@@ -354,8 +351,7 @@ impl Lexer {
                 self.eof_handled = false;
                 Ok(Some(self.move_to_with_unread(State::Normal, &[']'], Token::Character(']'))))
             },
-            State::Normal =>
-                Ok(None),
+            State::Normal => Ok(None),
         }
     }
 
@@ -367,7 +363,6 @@ impl Lexer {
             kind: ErrorKind::Syntax(e.to_cow()),
         }
     }
-
 
     #[inline(never)]
     fn dispatch_char(&mut self, c: char) -> Result {

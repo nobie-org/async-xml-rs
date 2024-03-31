@@ -1,15 +1,13 @@
 //! W3C XML conformance test suite <https://www.w3.org/XML/Test/>
 
-use std::collections::HashMap;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Mutex;
-use xml::EventWriter;
-use xml::ParserConfig;
 use xml::reader::XmlEvent;
+use xml::{EventWriter, ParserConfig};
 
 static UNZIP: Mutex<()> = Mutex::new(());
 
@@ -89,7 +87,6 @@ fn run_suite(suite_rel_path: &str) {
                 attr = attributes.into_iter().map(|a| (a.name.local_name, a.value)).collect();
             },
             _ => {},
-
         }
     }
     if let Some(out) = new_known_failures_file {
