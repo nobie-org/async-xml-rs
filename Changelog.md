@@ -1,4 +1,8 @@
 
+## Version 0.8.20
+
+* Fixed escaping of literal `]]>` in CDATA
+
 ## Version 0.8.19
 
 * Fixed whitespace event when parsing DOCTYPE with internal subset
