@@ -79,6 +79,11 @@ impl<W: Write> EventWriter<W> {
         &mut self.sink
     }
 
+    /// Returns an immutable reference to the underlying `Writer`.
+    pub fn inner_ref(&self) -> &W {
+        &self.sink
+    }
+
     /// Unwraps this `EventWriter`, returning the underlying writer.
     ///
     /// Note that this is a destructive operation: unwrapping a writer and then wrapping
