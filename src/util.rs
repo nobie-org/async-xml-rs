@@ -102,7 +102,7 @@ pub(crate) struct CharReader {
 }
 
 impl CharReader {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             encoding: Encoding::Unknown,
         }
