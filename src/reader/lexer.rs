@@ -52,6 +52,8 @@ pub(crate) enum Token {
     ReferenceEnd,
     /// `<!` of `ENTITY`
     MarkupDeclarationStart,
+    /// End of file
+    Eof,
 }
 
 impl fmt::Display for Token {
@@ -77,7 +79,7 @@ impl fmt::Display for Token {
                 Token::SingleQuote                => "'",
                 Token::DoubleQuote                => "\"",
                 Token::MarkupDeclarationStart     => "<!",
-                Token::Character(_)               => {
+                Token::Eof | Token::Character(_)  => {
                     debug_assert!(false);
                     ""
                 },
@@ -284,12 +286,12 @@ impl Lexer {
     ///
     /// Return value:
     /// * `Err(reason) where reason: reader::Error` - when an error occurs;
-    /// * `Ok(None)` - upon end of stream is reached;
-    /// * `Ok(Some(token)) where token: Token` - in case a complete-token has been read from the stream.
-    pub fn next_token<B: Read>(&mut self, b: &mut B) -> Result {
+    /// * `Ok(Token::Eof)` - upon end of stream is reached;
+    /// * `Ok(token) where token: Token` - in case a complete-token has been read from the stream.
+    pub fn next_token<B: Read>(&mut self, b: &mut B) -> Result<Token> {
         // Already reached end of buffer
         if self.eof_handled {
-            return Ok(None);
+            return Ok(Token::Eof);
         }
 
         if !self.inside_token {
@@ -301,7 +303,7 @@ impl Lexer {
         while let Some(c) = self.char_queue.pop_front() {
             if let Some(t) = self.dispatch_char(c)? {
                 self.inside_token = false;
-                return Ok(Some(t));
+                return Ok(t);
             }
         }
         // if char_queue is empty, all circular reparsing is done
@@ -320,7 +322,7 @@ impl Lexer {
 
             if let Some(t) = self.dispatch_char(c)? {
                 self.inside_token = false;
-                return Ok(Some(t));
+                return Ok(t);
             }
         }
 
@@ -328,7 +330,7 @@ impl Lexer {
     }
 
     #[inline(never)]
-    fn end_of_stream(&mut self) -> Result {
+    fn end_of_stream(&mut self) -> Result<Token> {
         // Handle end of stream
         self.eof_handled = true;
         self.pos = self.head_pos;
@@ -342,16 +344,16 @@ impl Lexer {
             State::InsideDoctype | State::InsideMarkupDeclarationQuotedString(_) =>
                 Err(self.error(SyntaxError::UnexpectedEof)),
             State::EmptyTagClosing =>
-                Ok(Some(Token::Character('/'))),
+                Ok(Token::Character('/')),
             State::CommentClosing(ClosingSubstate::First) =>
-                Ok(Some(Token::Character('-'))),
+                Ok(Token::Character('-')),
             State::InvalidCDataClosing(ClosingSubstate::First) =>
-                Ok(Some(Token::Character(']'))),
+                Ok(Token::Character(']')),
             State::InvalidCDataClosing(ClosingSubstate::Second) => {
                 self.eof_handled = false;
-                Ok(Some(self.move_to_with_unread(State::Normal, &[']'], Token::Character(']'))))
+                Ok(self.move_to_with_unread(State::Normal, &[']'], Token::Character(']')))
             },
-            State::Normal => Ok(None),
+            State::Normal => Ok(Token::Eof),
         }
     }
 
@@ -655,7 +657,7 @@ mod tests {
     macro_rules! assert_oks(
         (for $lex:ident and $buf:ident ; $($e:expr)+) => ({
             $(
-                assert_eq!(Ok(Some($e)), $lex.next_token(&mut $buf));
+                assert_eq!(Ok($e), $lex.next_token(&mut $buf));
              )+
         })
     );
@@ -672,7 +674,7 @@ mod tests {
 
     macro_rules! assert_none(
         (for $lex:ident and $buf:ident) => (
-            assert_eq!(Ok(None), $lex.next_token(&mut $buf))
+            assert_eq!(Ok(Token::Eof), $lex.next_token(&mut $buf))
         )
     );
 
@@ -1099,7 +1101,7 @@ mod tests {
             let (mut lex, mut buf) = make_lex_and_buf($data);
             lex.disable_errors();
             for c in $chunk.chars() {
-                assert_eq!(Ok(Some(Token::Character(c))), lex.next_token(&mut buf));
+                assert_eq!(Ok(Token::Character(c)), lex.next_token(&mut buf));
             }
             assert_oks!(for lex and buf ;
                 Token::Character($app)
