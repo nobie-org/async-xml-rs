@@ -32,8 +32,10 @@ impl PullParser {
                 self.buf.push(c);
                 None
             },
-
-            _ => unreachable!(),
+            _ => {
+                debug_assert!(false, "unreachable");
+                None
+            },
         }
     }
 }

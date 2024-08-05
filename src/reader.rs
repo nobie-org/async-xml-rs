@@ -66,7 +66,10 @@ impl<R: Read> EventReader<R> {
             match self.next()? {
                 XmlEvent::StartElement { .. } => depth += 1,
                 XmlEvent::EndElement { .. } => depth -= 1,
-                XmlEvent::EndDocument => unreachable!(),
+                XmlEvent::EndDocument => return Err(Error {
+                    kind: ErrorKind::UnexpectedEof,
+                    pos: self.parser.position(),
+                }),
                 _ => {},
             }
         }
