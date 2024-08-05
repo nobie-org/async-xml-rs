@@ -1,4 +1,9 @@
 
+## Version 0.8.21
+
+* Added `EventWriter::inner_ref`
+* ~15% performance improvement
+
 ## Version 0.8.20
 
 * Fixed escaping of literal `]]>` in CDATA
