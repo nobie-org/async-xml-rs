@@ -73,8 +73,8 @@ impl Namespace {
     /// Returns an empty namespace.
     #[inline]
     #[must_use]
-    pub fn empty() -> Namespace {
-        Namespace(BTreeMap::new())
+    pub fn empty() -> Self {
+        Self(BTreeMap::new())
     }
 
     /// Checks whether this namespace is empty.
@@ -168,7 +168,7 @@ impl Namespace {
 
     /// Borrowed namespace for the writer
     #[must_use]
-    pub fn borrow(&self) -> Cow<'_, Self> {
+    pub const fn borrow(&self) -> Cow<'_, Self> {
         Cow::Borrowed(self)
     }
 
@@ -207,8 +207,8 @@ impl NamespaceStack {
     /// Returns an empty namespace stack.
     #[inline]
     #[must_use]
-    pub fn empty() -> NamespaceStack {
-        NamespaceStack(Vec::with_capacity(2))
+    pub fn empty() -> Self {
+        Self(Vec::with_capacity(2))
     }
 
     /// Returns a namespace stack with default items in it.
@@ -220,8 +220,8 @@ impl NamespaceStack {
     #[inline]
     #[must_use]
     #[allow(clippy::should_implement_trait)]
-    pub fn default() -> NamespaceStack {
-        let mut nst = NamespaceStack::empty();
+    pub fn default() -> Self {
+        let mut nst = Self::empty();
         nst.push_empty();
         // xml namespace
         nst.put(NS_XML_PREFIX, NS_XML_URI);
@@ -234,7 +234,7 @@ impl NamespaceStack {
 
     /// Adds an empty namespace to the top of this stack.
     #[inline]
-    pub fn push_empty(&mut self) -> &mut NamespaceStack {
+    pub fn push_empty(&mut self) -> &mut Self {
         self.0.push(Namespace::empty());
         self
     }

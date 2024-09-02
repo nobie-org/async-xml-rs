@@ -96,13 +96,13 @@ enum Encountered {
 impl PullParser {
     /// Returns a new parser using the given config.
     #[inline]
-    pub fn new(config: impl Into<ParserConfig2>) -> PullParser {
+    pub fn new(config: impl Into<ParserConfig2>) -> Self {
         let config = config.into();
         Self::new_with_config2(config)
     }
 
     #[inline]
-    fn new_with_config2(config: ParserConfig2) -> PullParser {
+    fn new_with_config2(config: ParserConfig2) -> Self {
         let mut lexer = Lexer::new(&config);
         if let Some(enc) = config.override_encoding {
             lexer.set_encoding(enc);
@@ -111,7 +111,7 @@ impl PullParser {
         let mut pos = Vec::with_capacity(16);
         pos.push(TextPosition::new());
 
-        PullParser {
+        Self {
             config,
             lexer,
             st: State::DocumentStart,
@@ -180,7 +180,7 @@ impl Position for PullParser {
     /// Returns the position of the last event produced by the parser
     #[inline]
     fn position(&self) -> TextPosition {
-        self.pos.get(0).cloned().unwrap_or_else(TextPosition::new)
+        self.pos.first().copied().unwrap_or_else(TextPosition::new)
     }
 }
 
@@ -283,10 +283,10 @@ enum QuoteToken {
 
 impl QuoteToken {
     #[inline]
-    fn from_token(t: Token) -> Option<QuoteToken> {
+    fn from_token(t: Token) -> Option<Self> {
         match t {
-            Token::SingleQuote => Some(QuoteToken::SingleQuoteToken),
-            Token::DoubleQuote => Some(QuoteToken::DoubleQuoteToken),
+            Token::SingleQuote => Some(Self::SingleQuoteToken),
+            Token::DoubleQuote => Some(Self::DoubleQuoteToken),
             _ => {
                 debug_assert!(false);
                 None
@@ -294,10 +294,10 @@ impl QuoteToken {
         }
     }
 
-    fn as_token(self) -> Token {
+    const fn as_token(self) -> Token {
         match self {
-            QuoteToken::SingleQuoteToken => Token::SingleQuote,
-            QuoteToken::DoubleQuoteToken => Token::DoubleQuote,
+            Self::SingleQuoteToken => Token::SingleQuote,
+            Self::DoubleQuoteToken => Token::DoubleQuote,
         }
     }
 }
@@ -489,14 +489,14 @@ impl PullParser {
     /// * `t`       --- next token;
     /// * `on_name` --- a callback which is executed when whitespace is encountered.
     fn read_qualified_name<F>(&mut self, t: Token, target: QualifiedNameTarget, on_name: F) -> Option<Result>
-      where F: Fn(&mut PullParser, Token, OwnedName) -> Option<Result> {
+      where F: Fn(&mut Self, Token, OwnedName) -> Option<Result> {
         // We can get here for the first time only when self.data.name contains zero or one character,
         // but first character cannot be a colon anyway
         if self.buf.len() <= 1 {
             self.read_prefix_separator = false;
         }
 
-        let invoke_callback = move |this: &mut PullParser, t| {
+        let invoke_callback = move |this: &mut Self, t| {
             let name = this.take_buf();
             match name.parse() {
                 Ok(name) => on_name(this, t, name),
@@ -540,7 +540,7 @@ impl PullParser {
     /// * `t`        --- next token;
     /// * `on_value` --- a callback which is called when terminating quote is encountered.
     fn read_attribute_value<F>(&mut self, t: Token, on_value: F) -> Option<Result>
-      where F: Fn(&mut PullParser, String) -> Option<Result> {
+      where F: Fn(&mut Self, String) -> Option<Result> {
         match t {
             Token::Character(c) if self.data.quote.is_none() && is_whitespace_char(c) => None, // skip leading whitespace
 

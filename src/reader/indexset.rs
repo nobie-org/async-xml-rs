@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use std::hash::{BuildHasher, Hash, Hasher};
 
 /// An ordered set
-pub(crate) struct AttributesSet {
+pub struct AttributesSet {
     vec: Vec<OwnedAttribute>,
     /// Uses a no-op hasher, because these u64s are hashes already
     may_contain: HashSet<u64, U64HasherBuilder>,

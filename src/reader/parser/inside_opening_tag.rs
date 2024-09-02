@@ -24,7 +24,7 @@ impl PullParser {
                             Token::Character(c) if is_whitespace_char(c) => this.into_state_continue(State::InsideOpeningTag(OpeningTagSubstate::InsideTag)),
                             _ => {
                                 debug_assert!(false, "unreachable");
-                                return None;
+                                None
                             },
                         }
                     }

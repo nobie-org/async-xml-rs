@@ -186,7 +186,7 @@ impl error::Error for Error {
 impl<'a, P, M> From<(&'a P, M)> for Error where P: Position, M: Into<Cow<'static, str>> {
     #[cold]
     fn from(orig: (&'a P, M)) -> Self {
-        Error {
+        Self {
             pos: orig.0.position(),
             kind: ErrorKind::Syntax(orig.1.into()),
         }
@@ -197,7 +197,7 @@ impl From<util::CharReadError> for Error {
     #[cold]
     fn from(e: util::CharReadError) -> Self {
         use crate::util::CharReadError::{Io, UnexpectedEof, Utf8};
-        Error {
+        Self {
             pos: TextPosition::new(),
             kind: match e {
                 UnexpectedEof => ErrorKind::UnexpectedEof,
@@ -211,7 +211,7 @@ impl From<util::CharReadError> for Error {
 impl From<io::Error> for Error {
     #[cold]
     fn from(e: io::Error) -> Self {
-        Error {
+        Self {
             pos: TextPosition::new(),
             kind: ErrorKind::Io(e),
         }
@@ -232,7 +232,7 @@ impl Clone for ErrorKind {
 }
 impl PartialEq for ErrorKind {
     #[allow(deprecated)]
-    fn eq(&self, other: &ErrorKind) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8};
         match (self, other) {
             (UnexpectedEof, UnexpectedEof) => true,

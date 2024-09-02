@@ -89,24 +89,24 @@ impl fmt::Display for Token {
 }
 
 impl Token {
-    pub fn as_static_str(self) -> Option<&'static str> {
+    pub const fn as_static_str(self) -> Option<&'static str> {
         match self {
-            Token::OpeningTagStart            => Some("<"),
-            Token::ProcessingInstructionStart => Some("<?"),
-            Token::DoctypeStart               => Some("<!DOCTYPE"),
-            Token::ClosingTagStart            => Some("</"),
-            Token::CommentStart               => Some("<!--"),
-            Token::CDataStart                 => Some("<![CDATA["),
-            Token::TagEnd                     => Some(">"),
-            Token::EmptyTagEnd                => Some("/>"),
-            Token::ProcessingInstructionEnd   => Some("?>"),
-            Token::CommentEnd                 => Some("-->"),
-            Token::CDataEnd                   => Some("]]>"),
-            Token::ReferenceStart             => Some("&"),
-            Token::ReferenceEnd               => Some(";"),
-            Token::EqualsSign                 => Some("="),
-            Token::SingleQuote                => Some("'"),
-            Token::DoubleQuote                => Some("\""),
+            Self::OpeningTagStart            => Some("<"),
+            Self::ProcessingInstructionStart => Some("<?"),
+            Self::DoctypeStart               => Some("<!DOCTYPE"),
+            Self::ClosingTagStart            => Some("</"),
+            Self::CommentStart               => Some("<!--"),
+            Self::CDataStart                 => Some("<![CDATA["),
+            Self::TagEnd                     => Some(">"),
+            Self::EmptyTagEnd                => Some("/>"),
+            Self::ProcessingInstructionEnd   => Some("?>"),
+            Self::CommentEnd                 => Some("-->"),
+            Self::CDataEnd                   => Some("]]>"),
+            Self::ReferenceStart             => Some("&"),
+            Self::ReferenceEnd               => Some(";"),
+            Self::EqualsSign                 => Some("="),
+            Self::SingleQuote                => Some("'"),
+            Self::DoubleQuote                => Some("\""),
             _                                 => None
         }
     }
@@ -114,7 +114,7 @@ impl Token {
     // using String.push_str(token.to_string()) is simply way too slow
     pub fn push_to_string(self, target: &mut String) {
         match self {
-            Token::Character(c) => {
+            Self::Character(c) => {
                 debug_assert!(is_xml10_char(c) || is_xml11_char(c));
                 target.push(c);
             },
@@ -244,8 +244,8 @@ impl Position for Lexer {
 
 impl Lexer {
     /// Returns a new lexer with default state.
-    pub(crate) fn new(config: &ParserConfig2) -> Lexer {
-        Lexer {
+    pub(crate) fn new(config: &ParserConfig2) -> Self {
+        Self {
             reader: CharReader::new(),
             pos: TextPosition::new(),
             head_pos: TextPosition::new(),

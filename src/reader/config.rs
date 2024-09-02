@@ -112,8 +112,8 @@ impl ParserConfig {
     /// ```
     #[must_use]
     #[inline]
-    pub fn new() -> ParserConfig {
-        ParserConfig {
+    pub fn new() -> Self {
+        Self {
             trim_whitespace: false,
             whitespace_to_characters: false,
             cdata_to_characters: false,
@@ -166,7 +166,7 @@ impl ParserConfig {
     ///     .create_reader(&mut source);
     /// ```
     #[must_use]
-    pub fn add_entity<S: Into<String>, T: Into<String>>(mut self, entity: S, value: T) -> ParserConfig {
+    pub fn add_entity<S: Into<String>, T: Into<String>>(mut self, entity: S, value: T) -> Self {
         self.extra_entities.insert(entity.into(), value.into());
         self
     }
@@ -174,8 +174,8 @@ impl ParserConfig {
 
 impl Default for ParserConfig {
     #[inline]
-    fn default() -> ParserConfig {
-        ParserConfig::new()
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -226,7 +226,7 @@ pub struct ParserConfig2 {
 
 impl Default for ParserConfig2 {
     fn default() -> Self {
-        ParserConfig2 {
+        Self {
             c: ParserConfig::default(),
             override_encoding: None,
             ignore_invalid_encoding_declarations: false,

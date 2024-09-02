@@ -34,8 +34,8 @@ pub enum EmitterError {
 
 impl From<io::Error> for EmitterError {
     #[cold]
-    fn from(err: io::Error) -> EmitterError {
-        EmitterError::Io(err)
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
     }
 }
 
@@ -44,11 +44,11 @@ impl fmt::Display for EmitterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("emitter error: ")?;
         match self {
-            EmitterError::Io(e) => write!(f, "I/O error: {e}"),
-            EmitterError::DocumentStartAlreadyEmitted => f.write_str("document start event has already been emitted"),
-            EmitterError::LastElementNameNotAvailable => f.write_str("last element name is not available"),
-            EmitterError::EndElementNameIsNotEqualToLastStartElementName => f.write_str("end element name is not equal to last start element name"),
-            EmitterError::EndElementNameIsNotSpecified => f.write_str("end element name is not specified and can't be inferred"),
+            Self::Io(e) => write!(f, "I/O error: {e}"),
+            Self::DocumentStartAlreadyEmitted => f.write_str("document start event has already been emitted"),
+            Self::LastElementNameNotAvailable => f.write_str("last element name is not available"),
+            Self::EndElementNameIsNotEqualToLastStartElementName => f.write_str("end element name is not equal to last start element name"),
+            Self::EndElementNameIsNotSpecified => f.write_str("end element name is not specified and can't be inferred"),
         }
     }
 }
@@ -76,11 +76,11 @@ pub struct Emitter {
 }
 
 impl Emitter {
-    pub fn new(config: EmitterConfig) -> Emitter {
+    pub fn new(config: EmitterConfig) -> Self {
         let mut indent_stack = Vec::with_capacity(16);
         indent_stack.push(IndentFlags::WroteNothing);
 
-        Emitter {
+        Self {
             config,
 
             nst: NamespaceStack::empty(),

@@ -27,15 +27,15 @@ impl<W: Write> EventWriter<W> {
     /// Creates a new `EventWriter` out of an `std::io::Write` instance using the default
     /// configuration.
     #[inline]
-    pub fn new(sink: W) -> EventWriter<W> {
-        EventWriter::new_with_config(sink, EmitterConfig::new())
+    pub fn new(sink: W) -> Self {
+        Self::new_with_config(sink, EmitterConfig::new())
     }
 
     /// Creates a new `EventWriter` out of an `std::io::Write` instance using the provided
     /// configuration.
     #[inline]
-    pub fn new_with_config(sink: W, config: EmitterConfig) -> EventWriter<W> {
-        EventWriter {
+    pub fn new_with_config(sink: W, config: EmitterConfig) -> Self {
+        Self {
             sink,
             emitter: Emitter::new(config),
         }
