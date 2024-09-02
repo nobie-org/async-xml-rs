@@ -1,4 +1,8 @@
 
+## Version 0.8.22
+
+* Ability to retrieve the whole DOCTYPE. For backwards compatibility, it's a getter on the reader, not an event.
+
 ## Version 0.8.21
 
 * Added `EventWriter::inner_ref`
