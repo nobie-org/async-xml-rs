@@ -132,6 +132,7 @@ impl PullParser {
                         if let Some(e) = self.set_encountered(Encountered::Doctype) {
                             next_event = Some(e);
                         }
+                        self.data.doctype = Some(Token::DoctypeStart.to_string());
 
                         // We don't have a doctype event so skip this position
                         // FIXME: update when we have a doctype event
@@ -188,6 +189,8 @@ impl PullParser {
 
             Token::DoctypeStart => {
                 let next_event = self.set_encountered(Encountered::Doctype);
+                self.data.doctype = Some(Token::DoctypeStart.to_string());
+
                 // We don't have a doctype event so skip this position
                 // FIXME: update when we have a doctype event
                 self.next_pos();

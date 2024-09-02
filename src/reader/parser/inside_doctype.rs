@@ -10,6 +10,9 @@ impl PullParser {
     pub fn inside_doctype(&mut self, t: Token, substate: DoctypeSubstate) -> Option<Result> {
         if let Some(ref mut doctype) = self.data.doctype {
             write!(doctype, "{t}").ok()?;
+            if doctype.len() > self.config.max_data_length {
+                return Some(self.error(SyntaxError::ExceededConfiguredLimit));
+            }
         }
 
         match substate {

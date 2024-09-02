@@ -96,8 +96,11 @@ impl<R: Read> EventReader<R> {
         self.source
     }
 
-    /// Retrieves the DOCTYPE from the document if any
-    pub fn doctype(&self) -> Option<&String> {
+    /// Returns the DOCTYPE of the document if it has already been seen
+    ///
+    /// Available only after the root `StartElement` event
+    #[inline]
+    pub fn doctype(&self) -> Option<&str> {
         self.parser.doctype()
     }
 }
