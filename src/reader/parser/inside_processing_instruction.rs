@@ -75,7 +75,7 @@ impl PullParser {
                             // can't have a PI before `<?xml`
                             let next_event = self.set_encountered(Encountered::Declaration);
                             self.into_state(State::InsideProcessingInstruction(ProcessingInstructionSubstate::PIInsideData), next_event)
-                        }
+                        },
                     }
                 },
 

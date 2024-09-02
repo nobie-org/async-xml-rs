@@ -422,7 +422,7 @@ impl Lexer {
 
         self.reparse_depth += 1;
         if self.reparse_depth > self.max_entity_expansion_depth || self.char_queue.len() > self.max_entity_expansion_length {
-            return Err(self.error(SyntaxError::EntityTooBig))
+            return Err(self.error(SyntaxError::EntityTooBig));
         }
 
         self.eof_handled = false;
@@ -1135,8 +1135,6 @@ mod tests {
         check_case!("<!DOCTY",  'e'; "<!DOCTYe"  ; 0, 0, "Unexpected token '<!DOCTY' before 'e'");
         check_case!("<!DOCTYP", 'f'; "<!DOCTYPf" ; 0, 0, "Unexpected token '<!DOCTYP' before 'f'");
     }
-
-
 
     #[test]
     fn issue_98_cdata_ending_with_right_bracket() {

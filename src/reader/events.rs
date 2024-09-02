@@ -158,9 +158,9 @@ impl XmlEvent {
     /// ```rust
     /// use std::str;
     ///
-    /// use xml::{EventReader, EventWriter};
     /// use xml::reader::XmlEvent as ReaderEvent;
     /// use xml::writer::XmlEvent as WriterEvent;
+    /// use xml::{EventReader, EventWriter};
     ///
     /// let mut input: &[u8] = b"<hello>world</hello>";
     /// let mut output: Vec<u8> = Vec::new();

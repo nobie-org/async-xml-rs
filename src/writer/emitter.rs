@@ -317,7 +317,7 @@ impl Emitter {
                     write!(target, " xmlns=\"{uri}\"")
                 } else { Ok(()) },
                 // everything else
-                prefix => write!(target, " xmlns:{prefix}=\"{uri}\"")
+                prefix => write!(target, " xmlns:{prefix}=\"{uri}\""),
             }?;
         }
         Ok(())

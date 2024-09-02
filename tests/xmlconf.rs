@@ -116,7 +116,7 @@ fn expect_well_formed(xml_path: &Path, msg: &str) -> Result<(), Box<dyn std::err
             XmlEvent::StartDocument { .. } => {
                 if document_started { return Err("document started twice".into()); }
                 document_started = true;
-            }
+            },
             _ => {},
         }
         if let Some(e) = e.as_writer_event() {
@@ -125,7 +125,9 @@ fn expect_well_formed(xml_path: &Path, msg: &str) -> Result<(), Box<dyn std::err
             }
         }
     }
-    if !seen_any { return Err("no elements found".into()) }
+    if !seen_any {
+        return Err("no elements found".into());
+    }
     if let Some(e) = writes_failed {
         panic!("{} write failed on {e}", xml_path.display());
     }

@@ -887,16 +887,11 @@ impl<'a> fmt::Display for Event<'a> {
                         write!(f, "StartElement({} [{}])", Name(name), attrs.join(", "))
                     }
                 },
-                XmlEvent::EndElement { ref name } =>
-                    write!(f, "EndElement({})", Name(name)),
-                XmlEvent::Comment(ref data) =>
-                    write!(f, r#"Comment("{}")"#, data.escape_debug()),
-                XmlEvent::CData(ref data) =>
-                    write!(f, r#"CData("{}")"#, data.escape_debug()),
-                XmlEvent::Characters(ref data) =>
-                    write!(f, r#"Characters("{}")"#, data.escape_debug()),
-                XmlEvent::Whitespace(ref data) =>
-                    write!(f, r#"Whitespace("{}")"#, data.escape_debug()),
+                XmlEvent::EndElement { ref name } => write!(f, "EndElement({})", Name(name)),
+                XmlEvent::Comment(ref data) => write!(f, r#"Comment("{}")"#, data.escape_debug()),
+                XmlEvent::CData(ref data) => write!(f, r#"CData("{}")"#, data.escape_debug()),
+                XmlEvent::Characters(ref data) => write!(f, r#"Characters("{}")"#, data.escape_debug()),
+                XmlEvent::Whitespace(ref data) => write!(f, r#"Whitespace("{}")"#, data.escape_debug()),
             },
             Err(ref e) => e.fmt(f),
         }

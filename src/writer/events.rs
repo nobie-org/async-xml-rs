@@ -207,8 +207,7 @@ impl<'a> StartElementBuilder<'a> {
     #[inline]
     #[must_use]
     pub fn attr<N>(mut self, name: N, value: &'a str) -> Self
-        where N: Into<Name<'a>>
-    {
+    where N: Into<Name<'a>> {
         self.attributes.push(Attribute::new(name.into(), value));
         self
     }
@@ -240,8 +239,7 @@ impl<'a> StartElementBuilder<'a> {
     #[inline]
     #[must_use]
     pub fn default_ns<S>(mut self, uri: S) -> Self
-        where S: Into<String>
-    {
+    where S: Into<String> {
         self.namespace.put(NS_NO_PREFIX, uri);
         self
     }

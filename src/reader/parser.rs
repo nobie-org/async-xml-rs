@@ -347,24 +347,22 @@ impl PullParser {
                 Ok(Token::Eof) => {
                     // Forward pos to the lexer head
                     self.next_pos();
-                    return self.handle_eof()
+                    return self.handle_eof();
                 },
-                Ok(token) => {
-                    match self.dispatch_token(token) {
-                        None => continue,
-                        Some(Ok(xml_event)) => {
-                            self.next_pos();
-                            return Ok(xml_event);
-                        },
-                        Some(Err(xml_error)) => {
-                            self.next_pos();
-                            return self.set_final_result(Err(xml_error));
-                        },
-                    }
+                Ok(token) => match self.dispatch_token(token) {
+                    None => continue,
+                    Some(Ok(xml_event)) => {
+                        self.next_pos();
+                        return Ok(xml_event);
+                    },
+                    Some(Err(xml_error)) => {
+                        self.next_pos();
+                        return self.set_final_result(Err(xml_error));
+                    },
                 },
                 Err(lexer_error) => {
                     self.next_pos();
-                    return self.set_final_result(Err(lexer_error))
+                    return self.set_final_result(Err(lexer_error));
                 },
             }
         }

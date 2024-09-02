@@ -83,7 +83,7 @@ impl PullParser {
                             this.nst.put(name.local_name.clone(), value);
                             this.into_state_continue(State::InsideOpeningTag(OpeningTagSubstate::AfterAttributeValue))
                         }
-                    }
+                    },
 
                     // declaring default namespace
                     None if &*name.local_name == namespace::NS_XMLNS_PREFIX =>
@@ -101,12 +101,9 @@ impl PullParser {
                         if this.data.attributes.len() >= max_attrs {
                             return Some(this.error(SyntaxError::ExceededConfiguredLimit));
                         }
-                        this.data.attributes.push(OwnedAttribute {
-                            name,
-                            value
-                        });
+                        this.data.attributes.push(OwnedAttribute { name, value });
                         this.into_state_continue(State::InsideOpeningTag(OpeningTagSubstate::AfterAttributeValue))
-                    }
+                    },
                 }
             }),
 

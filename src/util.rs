@@ -103,9 +103,7 @@ pub(crate) struct CharReader {
 
 impl CharReader {
     pub const fn new() -> Self {
-        Self {
-            encoding: Encoding::Unknown,
-        }
+        Self { encoding: Encoding::Unknown }
     }
 
     pub fn next_char_from<R: Read>(&mut self, source: &mut R) -> Result<Option<char>, CharReadError> {

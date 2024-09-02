@@ -8,7 +8,6 @@
 //!
 //! Please note that functions of this parser may panic.
 //! If a panic could cause a Denial Of Service in your codebase, *you're* responsible for wrapping access to this library in `catch_unwind`.
-//!
 
 #![cfg_attr(doctest, doc = include_str!("../README.md"))]
 

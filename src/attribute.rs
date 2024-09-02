@@ -1,5 +1,4 @@
 //! Contains XML attributes manipulation types and functions.
-//!
 
 use std::fmt;
 
@@ -69,10 +68,7 @@ impl OwnedAttribute {
     /// Creates a new owned attribute using the provided owned name and an owned string value.
     #[inline]
     pub fn new<S: Into<String>>(name: OwnedName, value: S) -> Self {
-        Self {
-            name,
-            value: value.into(),
-        }
+        Self { name, value: value.into() }
     }
 }
 
