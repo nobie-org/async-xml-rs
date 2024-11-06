@@ -99,7 +99,7 @@ impl<'a> Name<'a> {
     /// Returns a new `Name` instance representing plain local name.
     #[inline]
     #[must_use]
-    pub fn local(local_name: &str) -> Name<'_> {
+    pub const fn local(local_name: &str) -> Name<'_> {
         Name {
             local_name,
             prefix: None,
@@ -110,7 +110,7 @@ impl<'a> Name<'a> {
     /// Returns a new `Name` instance with the given local name and prefix.
     #[inline]
     #[must_use]
-    pub fn prefixed(local_name: &'a str, prefix: &'a str) -> Name<'a> {
+    pub const fn prefixed(local_name: &'a str, prefix: &'a str) -> Self {
         Name {
             local_name,
             namespace: None,
@@ -122,7 +122,7 @@ impl<'a> Name<'a> {
     /// with a namespace URI.
     #[inline]
     #[must_use]
-    pub fn qualified(local_name: &'a str, namespace: &'a str, prefix: Option<&'a str>) -> Name<'a> {
+    pub const fn qualified(local_name: &'a str, namespace: &'a str, prefix: Option<&'a str>) -> Self {
         Name {
             local_name,
             namespace: Some(namespace),
@@ -146,7 +146,7 @@ impl<'a> Name<'a> {
     /// allocations.
     #[inline]
     #[must_use]
-    pub fn repr_display(&self) -> ReprDisplay<'_, '_> {
+    pub const fn repr_display(&self) -> ReprDisplay<'_, '_> {
         ReprDisplay(self)
     }
 
