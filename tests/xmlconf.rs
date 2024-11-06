@@ -139,7 +139,7 @@ fn expect_ill_formed(xml_path: &Path, msg: &str) -> Result<(), Box<dyn std::erro
     let f = BufReader::new(File::open(xml_path)?);
     let r = ParserConfig::new().allow_multiple_root_elements(false).create_reader(f);
     for e in r {
-        if let Err(_) = e {
+        if e.is_err() {
             return Ok(());
         }
     }

@@ -71,7 +71,7 @@ impl<'a> From<(&'a str, &'a str)> for Name<'a> {
     }
 }
 
-impl<'a> fmt::Display for Name<'a> {
+impl fmt::Display for Name<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(namespace) = self.namespace {
             write!(f, "{{{namespace}}}")?;
@@ -207,8 +207,8 @@ impl OwnedName {
 
     /// Returns a new `OwnedName` instance representing a plain local name.
     #[inline]
-    pub fn local<S>(local_name: S) -> OwnedName where S: Into<String> {
-        OwnedName {
+    pub fn local<S>(local_name: S) -> Self where S: Into<String> {
+        Self {
             local_name: local_name.into(),
             namespace: None,
             prefix: None,

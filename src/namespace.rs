@@ -395,7 +395,7 @@ pub struct NamespaceStackMappings<'a> {
     used_keys: HashSet<&'a str>,
 }
 
-impl<'a> NamespaceStackMappings<'a> {
+impl NamespaceStackMappings<'_> {
     fn go_to_next_namespace(&mut self) -> bool {
         self.current_namespace = self.namespaces.next().map(|ns| ns.into_iter());
         self.current_namespace.is_some()
@@ -507,7 +507,7 @@ impl<'a> Extend<UriMapping<'a>> for NamespaceStack {
 /// ```
 pub struct CheckedTarget<'a>(&'a mut NamespaceStack);
 
-impl<'a, 'b> Extend<UriMapping<'b>> for CheckedTarget<'a> {
+impl<'b> Extend<UriMapping<'b>> for CheckedTarget<'_> {
     fn extend<T>(&mut self, iterable: T) where T: IntoIterator<Item=UriMapping<'b>> {
         for (prefix, uri) in iterable {
             self.0.put_checked(prefix, uri);
