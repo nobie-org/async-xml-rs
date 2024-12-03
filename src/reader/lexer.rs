@@ -263,7 +263,7 @@ impl Lexer {
         }
     }
 
-    pub(crate) fn encoding(&mut self) -> Encoding {
+    pub(crate) fn encoding(&self) -> Encoding {
         self.reader.encoding
     }
 
@@ -308,12 +308,7 @@ impl Lexer {
         }
         // if char_queue is empty, all circular reparsing is done
         self.reparse_depth = 0;
-        loop {
-            let c = match self.reader.next_char_from(b)? {
-                Some(c) => c,  // got next char
-                None => break, // nothing to read left
-            };
-
+        while let Some(c) = self.reader.next_char_from(b)? {
             if c == '\n' {
                 self.head_pos.new_line();
             } else {

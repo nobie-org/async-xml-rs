@@ -134,7 +134,7 @@ impl Emitter {
         }
     }
 
-    fn write_newline<W: Write>(&mut self, target: &mut W, level: usize) -> Result<()> {
+    fn write_newline<W: Write>(&self, target: &mut W, level: usize) -> Result<()> {
         target.write_all(self.config.line_separator.as_bytes())?;
         for _ in 0..level {
             target.write_all(self.config.indent_string.as_bytes())?;
@@ -303,7 +303,7 @@ impl Emitter {
     }
 
     #[track_caller]
-    pub fn emit_current_namespace_attributes<W>(&mut self, target: &mut W) -> Result<()>
+    pub fn emit_current_namespace_attributes<W>(&self, target: &mut W) -> Result<()>
         where W: Write
     {
         for (prefix, uri) in self.nst.peek() {
@@ -323,7 +323,7 @@ impl Emitter {
         Ok(())
     }
 
-    pub fn emit_attributes<W: Write>(&mut self, target: &mut W,
+    pub fn emit_attributes<W: Write>(&self, target: &mut W,
                                       attributes: &[Attribute<'_>]) -> Result<()> {
         for attr in attributes {            
             write!(target, " {}=\"", attr.name.repr_display())?;
