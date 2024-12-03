@@ -230,6 +230,118 @@ fn sample_7() {
 }
 
 #[test]
+fn sample_8() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_full.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(false)
+            .whitespace_to_characters(false)
+            .cdata_to_characters(false)
+            .trim_whitespace(false)
+            .coalesce_characters(false),
+        false,
+    );
+}
+
+#[test]
+fn sample_8_c() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_c.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(true)
+            .whitespace_to_characters(false)
+            .cdata_to_characters(false)
+            .trim_whitespace(false)
+            .coalesce_characters(false),
+        false,
+    );
+}
+
+#[test]
+fn sample_8_wsch() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_wsch.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(false)
+            .whitespace_to_characters(true)
+            .cdata_to_characters(false)
+            .trim_whitespace(false)
+            .coalesce_characters(false),
+        false,
+    );
+}
+
+#[test]
+fn sample_8_wscdch() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_wscdch.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(false)
+            .whitespace_to_characters(true)
+            .cdata_to_characters(true)
+            .trim_whitespace(false)
+            .coalesce_characters(false),
+        false,
+    );
+}
+
+#[test]
+fn sample_8_coalesce_wscdch() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_coalesce_wscdch.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(false)
+            .whitespace_to_characters(true)
+            .cdata_to_characters(true)
+            .trim_whitespace(false)
+            .coalesce_characters(true),
+        false,
+    );
+}
+
+#[test]
+fn sample_8_coalesce_cwscdch() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_coalesce_cwscdch.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(true)
+            .whitespace_to_characters(true)
+            .cdata_to_characters(true)
+            .trim_whitespace(false)
+            .coalesce_characters(true),
+        false,
+    );
+}
+
+#[test]
+fn sample_8_coalesce_all() {
+    test_files(
+        "documents/sample_8.xml",
+        "documents/sample_8_coalesce_all.txt",
+        ParserConfig::new()
+            .ignore_root_level_whitespace(false)
+            .ignore_comments(true)
+            .whitespace_to_characters(true)
+            .cdata_to_characters(true)
+            .trim_whitespace(true)
+            .coalesce_characters(true),
+        true,
+    );
+}
+
+#[test]
 fn eof_1() {
     test(
         br#"<"#,
@@ -748,8 +860,8 @@ fn trim_until_bar(s: String) -> String {
 
 #[track_caller]
 fn test_files(input_path: &str, output_path: &str, config: ParserConfig, test_position: bool) {
-    let input = std::fs::read(Path::new("tests").join(input_path)).unwrap();
-    let output = std::fs::read(Path::new("tests").join(output_path)).unwrap();
+    let input = std::fs::read(Path::new("tests").join(input_path)).expect("in path");
+    let output = std::fs::read(Path::new("tests").join(output_path)).expect("out path");
     let should_print = std::env::var("PRINT_SPEC").map_or(false, |val| val == "1");
     let mut out = if should_print { Some(vec![]) } else { None };
 
