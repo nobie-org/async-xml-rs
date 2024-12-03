@@ -1,3 +1,7 @@
+## Version 0.8.24
+
+* Fixed reporting of line/column position of CDATA when trimming whitespace
+
 ## Version 0.8.23
 
 * StartDocument event will consistently use uppercase "UTF-8" name for encoding when the document did not declare it expicitly, but beware that documents can still use lowercase encoding names, so you must always use case-insensitive comparisons.
