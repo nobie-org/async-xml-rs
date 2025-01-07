@@ -1,3 +1,7 @@
+## Version 0.8.25
+
+* `TryFrom` for converting from reader to writer events, to make `.as_writer_event()` more discoverable.
+
 ## Version 0.8.24
 
 * Fixed reporting of line/column position of CDATA when trimming whitespace
