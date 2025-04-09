@@ -53,7 +53,7 @@ xml-rs uses [Cargo](https://crates.io), so add it with `cargo add xml` or modify
 
 ```toml
 [dependencies]
-xml = "0.8.16"
+xml = "0.8.20"
 ```
 
 The package exposes a single crate called `xml`.
