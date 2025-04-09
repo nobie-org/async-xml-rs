@@ -112,7 +112,7 @@ impl CharReader {
 
         let mut buf = [0u8; MAX_CODEPOINT_LEN];
         let mut pos = 0;
-        loop {
+        while pos < MAX_CODEPOINT_LEN {
             let next = match bytes.next() {
                 Some(Ok(b)) => b,
                 Some(Err(e)) => return Err(e.into()),
@@ -181,6 +181,7 @@ impl CharReader {
                 },
             }
         }
+        Err(CharReadError::Io(io::ErrorKind::InvalidData.into()))
     }
 
     #[cold]
@@ -270,6 +271,9 @@ mod tests {
 
         let mut bytes: &[u8] = b"\x42\x00";
         assert_eq!(CharReader { encoding: Encoding::Utf16 }.next_char_from(&mut bytes).unwrap(), Some('B'));
+
+        let mut bytes: &[u8] = &[0xEF, 0xBB, 0xBF, 0xFF, 0xFF];
+        assert!(CharReader { encoding: Encoding::Utf16 }.next_char_from(&mut bytes).is_err());
 
         let mut bytes: &[u8] = b"\x00";
         assert!(CharReader { encoding: Encoding::Utf16Be }.next_char_from(&mut bytes).is_err());
