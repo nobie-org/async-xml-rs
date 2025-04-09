@@ -160,10 +160,8 @@ impl CharReader {
                         if let Some(Ok(c)) = char::decode_utf16([u16::from_be_bytes(buf[..2].try_into().unwrap())]).next() {
                             return Ok(Some(c));
                         }
-                    } else if pos == 4 { // surrogate
-                        return char::decode_utf16([u16::from_be_bytes(buf[..2].try_into().unwrap()), u16::from_be_bytes(buf[2..4].try_into().unwrap())])
-                            .next().transpose()
-                            .map_err(|e| CharReadError::Io(io::Error::new(io::ErrorKind::InvalidData, e)));
+                    } else if pos == 4 {
+                        return Self::surrogate([u16::from_be_bytes(buf[..2].try_into().unwrap()), u16::from_be_bytes(buf[2..4].try_into().unwrap())]);
                     }
                 },
                 Encoding::Utf16Le => {
@@ -173,10 +171,8 @@ impl CharReader {
                         if let Some(Ok(c)) = char::decode_utf16([u16::from_le_bytes(buf[..2].try_into().unwrap())]).next() {
                             return Ok(Some(c));
                         }
-                    } else if pos == 4 { // surrogate
-                        return char::decode_utf16([u16::from_le_bytes(buf[..2].try_into().unwrap()), u16::from_le_bytes(buf[2..4].try_into().unwrap())])
-                            .next().transpose()
-                            .map_err(|e| CharReadError::Io(io::Error::new(io::ErrorKind::InvalidData, e)));
+                    } else if pos == 4 {
+                        return Self::surrogate([u16::from_le_bytes(buf[..2].try_into().unwrap()), u16::from_le_bytes(buf[2..4].try_into().unwrap())]);
                     }
                 },
             }
@@ -213,6 +209,11 @@ impl CharReader {
             }
         }
         None
+    }
+
+    fn surrogate(buf: [u16; 2]) -> Result<Option<char>, CharReadError> {
+        char::decode_utf16(buf).next().transpose()
+            .map_err(|e| CharReadError::Io(io::Error::new(io::ErrorKind::InvalidData, e)))
     }
 }
 
