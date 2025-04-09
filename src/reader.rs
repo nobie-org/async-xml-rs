@@ -26,19 +26,21 @@ mod parser;
 pub type Result<T, E = Error> = result::Result<T, E>;
 
 /// A wrapper around an `std::io::Read` instance which provides pull-based XML parsing.
+///
+/// The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
 pub struct EventReader<R: Read> {
     source: R,
     parser: PullParser,
 }
 
 impl<R: Read> EventReader<R> {
-    /// Creates a new reader, consuming the given stream.
+    /// Creates a new reader, consuming the given stream. The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
     #[inline]
     pub fn new(source: R) -> Self {
         Self::new_with_config(source, ParserConfig2::new())
     }
 
-    /// Creates a new reader with the provded configuration, consuming the given stream.
+    /// Creates a new reader with the provded configuration, consuming the given stream. The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
     #[inline]
     pub fn new_with_config(source: R, config: impl Into<ParserConfig2>) -> Self {
         Self { source, parser: PullParser::new(config) }

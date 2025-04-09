@@ -126,7 +126,7 @@ impl ParserConfig {
         }
     }
 
-    /// Creates an XML reader with this configuration.
+    /// Creates an XML reader with this configuration. The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
     ///
     /// This is a convenience method for configuring and creating a reader at the same time:
     ///
@@ -266,7 +266,7 @@ impl ParserConfig2 {
         self
     }
 
-    /// Creates an XML reader with this configuration.
+    /// Creates an XML reader with this configuration. The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
     ///
     /// This is a convenience method for configuring and creating a reader at the same time:
     ///
