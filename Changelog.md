@@ -1,3 +1,11 @@
+## Version 0.8.27
+
+* Added detection of invalid `<?` in attributes
+
+## Version 0.8.26
+
+* Fixed buffering of files with a broken UTF-16 encoding
+
 ## Version 0.8.25
 
 * `TryFrom` for converting from reader to writer events, to make `.as_writer_event()` more discoverable.
