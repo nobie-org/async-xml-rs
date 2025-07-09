@@ -10,6 +10,7 @@ use crate::util;
 
 /// Failure reason
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ErrorKind {
     /// This is an ill-formed XML document
     Syntax(Cow<'static, str>),
@@ -154,19 +155,9 @@ impl Position for Error {
 }
 
 impl Error {
-    /// Returns a reference to a message which is contained inside this error.
-    #[cold]
     #[doc(hidden)]
-    #[allow(deprecated)]
-    #[must_use]
-    pub fn msg(&self) -> &str {
-        use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8};
-        match &self.kind {
-            Io(io_error) => io_error.description(),
-            Utf8(reason) => reason.description(),
-            Syntax(msg) => msg.as_ref(),
-            UnexpectedEof => "Unexpected EOF",
-        }
+    pub fn msg(&self) -> String {
+        self.to_string()
     }
 
     /// Failure reason
@@ -178,9 +169,6 @@ impl Error {
 }
 
 impl error::Error for Error {
-    #[allow(deprecated)]
-    #[cold]
-    fn description(&self) -> &str { self.msg() }
 }
 
 impl<'a, P, M> From<(&'a P, M)> for Error where P: Position, M: Into<Cow<'static, str>> {

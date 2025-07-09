@@ -1,3 +1,8 @@
+## Version 1.0.0
+
+* Marked structs as `#[non_exhaustive]`
+* Merged `ParserConfig2` back into `ParserConfig`
+
 ## Version 0.8.27
 
 * Added detection of invalid `<?` in attributes
