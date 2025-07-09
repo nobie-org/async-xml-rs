@@ -3,8 +3,8 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use xml::reader::{ParserConfig, Result};
 use xml::EmitterConfig;
+use xml::reader::{ParserConfig, Result};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arg = std::env::args_os().nth(1);

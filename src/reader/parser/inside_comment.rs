@@ -9,7 +9,7 @@ impl PullParser {
         match t {
             Token::CommentEnd if self.config.c.ignore_comments => {
                 self.into_state_continue(State::OutsideTag)
-            }
+            },
 
             Token::CommentEnd => {
                 let data = self.take_buf();

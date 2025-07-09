@@ -169,7 +169,7 @@ impl Emitter {
         self.indent_level += 1;
     }
 
-    fn before_end_element<W: Write>(&mut self, target: &mut W) -> Result<()> {
+    fn before_end_element<W: Write>(&self, target: &mut W) -> Result<()> {
         if self.config.perform_indent && self.indent_level > 0 && self.wrote_markup() &&
            !self.wrote_text() {
             let indent_level = self.indent_level;

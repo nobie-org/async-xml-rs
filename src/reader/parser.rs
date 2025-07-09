@@ -398,6 +398,7 @@ impl PullParser {
     }
 
     #[cold]
+    #[allow(clippy::needless_pass_by_value)]
     fn error(&self, e: SyntaxError) -> Result {
         Err(Error {
             pos: self.lexer.position(),
@@ -465,17 +466,20 @@ impl PullParser {
     }
 
     #[inline]
+    #[allow(clippy::wrong_self_convention)]
     fn into_state(&mut self, st: State, ev: Option<Result>) -> Option<Result> {
         self.st = st;
         ev
     }
 
     #[inline]
+    #[allow(clippy::wrong_self_convention)]
     fn into_state_continue(&mut self, st: State) -> Option<Result> {
         self.into_state(st, None)
     }
 
     #[inline]
+    #[allow(clippy::wrong_self_convention)]
     fn into_state_emit(&mut self, st: State, ev: Result) -> Option<Result> {
         self.into_state(st, Some(ev))
     }

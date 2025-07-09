@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::{cmp, env};
 
-use xml::reader::XmlEvent;
 use xml::ParserConfig;
+use xml::reader::XmlEvent;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut file;
@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             XmlEvent::EndElement { .. } => {
                 depth -= 1;
             },
-        };
+        }
     }
 
     namespaces.remove(xml::namespace::NS_EMPTY_URI);

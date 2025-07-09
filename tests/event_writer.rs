@@ -21,7 +21,9 @@ fn reading_writing_equal_with_namespaces() {
 
     {
         let r = EventReader::new(BufReader::new(&mut f));
-        let mut w = EmitterConfig::default().perform_indent(true).create_writer(&mut b);
+        let mut w = EmitterConfig::default()
+            .perform_indent(true)
+            .create_writer(&mut b);
 
         for e in r {
             match e {
@@ -52,9 +54,12 @@ fn writing_simple() {
     let mut b = Vec::new();
 
     {
-        let mut w = EmitterConfig::new().write_document_declaration(false).create_writer(&mut b);
+        let mut w = EmitterConfig::new()
+            .write_document_declaration(false)
+            .create_writer(&mut b);
 
-        w.write(XmlEvent::start_element("h:hello").ns("h", "urn:hello-world")).unwrap();
+        w.write(XmlEvent::start_element("h:hello").ns("h", "urn:hello-world"))
+            .unwrap();
         w.write("hello world").unwrap();
         w.write(XmlEvent::end_element()).unwrap();
     }
@@ -72,7 +77,9 @@ fn writing_empty_elements_with_normalizing() {
     let mut b = Vec::new();
 
     {
-        let mut w = EmitterConfig::new().write_document_declaration(false).create_writer(&mut b);
+        let mut w = EmitterConfig::new()
+            .write_document_declaration(false)
+            .create_writer(&mut b);
 
         unwrap_all! {
             w.write(XmlEvent::start_element("hello"));
@@ -286,10 +293,10 @@ fn accidental_cdata_suffix_in_characters_is_escaped() {
     {
         use xml::reader::{EventReader, XmlEvent};
         let mut r = EventReader::new(&b[..]);
-        assert!(matches!(r.next().unwrap(), XmlEvent::StartDocument{..}));
-        assert!(matches!(r.next().unwrap(), XmlEvent::StartElement{..}));
+        assert!(matches!(r.next().unwrap(), XmlEvent::StartDocument { .. }));
+        assert!(matches!(r.next().unwrap(), XmlEvent::StartElement { .. }));
         assert_eq!(r.next().unwrap(), XmlEvent::Characters("[[a]]>b".into()));
-        assert!(matches!(r.next().unwrap(), XmlEvent::EndElement{..}));
+        assert!(matches!(r.next().unwrap(), XmlEvent::EndElement { .. }));
         assert!(matches!(r.next().unwrap(), XmlEvent::EndDocument));
     }
 }
@@ -314,13 +321,13 @@ fn raw_characters() {
     {
         use xml::reader::{EventReader, XmlEvent};
         let mut r = EventReader::new(&b[..]);
-        assert!(matches!(r.next().unwrap(), XmlEvent::StartDocument{..}));
-        assert!(matches!(r.next().unwrap(), XmlEvent::StartElement{..}));
+        assert!(matches!(r.next().unwrap(), XmlEvent::StartDocument { .. }));
+        assert!(matches!(r.next().unwrap(), XmlEvent::StartElement { .. }));
         assert_eq!(r.next().unwrap(), XmlEvent::Characters("[[a]]>b".into()));
-        assert!(matches!(r.next().unwrap(), XmlEvent::StartElement{..}));
+        assert!(matches!(r.next().unwrap(), XmlEvent::StartElement { .. }));
         assert_eq!(r.next().unwrap(), XmlEvent::Characters("b[c".into()));
-        assert!(matches!(r.next().unwrap(), XmlEvent::EndElement{..}));
-        assert!(matches!(r.next().unwrap(), XmlEvent::EndElement{..}));
+        assert!(matches!(r.next().unwrap(), XmlEvent::EndElement { .. }));
+        assert!(matches!(r.next().unwrap(), XmlEvent::EndElement { .. }));
         assert!(matches!(r.next().unwrap(), XmlEvent::EndDocument));
     }
 }

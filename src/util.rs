@@ -289,13 +289,13 @@ mod tests {
         match CharReader::new().next_char_from(&mut bytes).unwrap_err() {
             super::CharReadError::UnexpectedEof => {},
             e => panic!("Unexpected result: {e:?}")
-        };
+        }
 
         let mut bytes: &[u8] = b"\xff\x9f\x98\x32";     // invalid code point
         match CharReader::new().next_char_from(&mut bytes).unwrap_err() {
             super::CharReadError::Utf8(_) => {},
             e => panic!("Unexpected result: {e:?}")
-        };
+        }
 
         // error during read
         struct ErrorReader;

@@ -63,7 +63,7 @@ fn run_suite_with_config(suite_rel_path: &str, parser_config: ParserConfig2) {
                 let test_type = attr["TYPE"].as_str();
                 let id = attr.get("ID").map(|a| a.as_str()).unwrap_or_else(|| path.file_stem().unwrap().to_str().unwrap());
 
-                if let Some("1 2 3 4") = attr.get("EDITION").map(|s| s.as_str()) {
+                if attr.get("EDITION").map(|s| s.as_str()) == Some("1 2 3 4") {
                     // tests obsolete things changed in edition 5
                     continue;
                 }
@@ -87,7 +87,7 @@ fn run_suite_with_config(suite_rel_path: &str, parser_config: ParserConfig2) {
                         Err(e) => panic!("{suite_rel_path} failed on {} ({id})\n{e}", path.display()),
                         Ok(()) if known_bad => panic!("expected {} ({id}) to fail, but it passes {test_type} of {suite_rel_path} now\n{desc}", path.display()),
                         Ok(()) => {},
-                    };
+                    }
                 }
 
                 parsed += 1;
@@ -156,67 +156,82 @@ fn expect_ill_formed(xml_path: &Path, msg: &str) -> Result<(), Box<dyn std::erro
     Err(format!("{} {msg}", xml_path.file_name().and_then(std::ffi::OsStr::to_str).unwrap()).into())
 }
 
-#[test] fn eduni_errata_2e() {
+#[test]
+fn eduni_errata_2e() {
     run_suite("xmlconf/eduni/errata-2e/errata2e.xml");
 }
 
-#[test] fn eduni_errata_3e() {
+#[test]
+fn eduni_errata_3e() {
     run_suite("xmlconf/eduni/errata-3e/errata3e.xml");
 }
 
-#[test] fn eduni_errata_4e() {
+#[test]
+fn eduni_errata_4e() {
     run_suite("xmlconf/eduni/errata-4e/errata4e.xml");
 }
 
-#[test] fn eduni_misc_ht() {
+#[test]
+fn eduni_misc_ht() {
     run_suite("xmlconf/eduni/misc/ht-bh.xml");
 }
 
-#[test] fn eduni_namespaces_10() {
+#[test]
+fn eduni_namespaces_10() {
     run_suite("xmlconf/eduni/namespaces/1.0/rmt-ns10.xml");
 }
 
-#[test] fn eduni_namespaces_11() {
+#[test]
+fn eduni_namespaces_11() {
     run_suite("xmlconf/eduni/namespaces/1.1/rmt-ns11.xml");
 }
 
-#[test] fn eduni_namespaces_errata() {
+#[test]
+fn eduni_namespaces_errata() {
     run_suite("xmlconf/eduni/namespaces/errata-1e/errata1e.xml");
 }
 
-#[test] fn eduni_xml_11() {
+#[test]
+fn eduni_xml_11() {
     run_suite("xmlconf/eduni/xml-1.1/xml11.xml");
 }
 
-#[test] fn ibm_oasis_valid() {
+#[test]
+fn ibm_oasis_valid() {
     run_suite("xmlconf/ibm/ibm_oasis_valid.xml");
 }
 
-#[test] fn ibm_xml_11() {
+#[test]
+fn ibm_xml_11() {
     run_suite("xmlconf/ibm/xml-1.1/ibm_valid.xml");
 }
 
-#[test] fn oasis() {
+#[test]
+fn oasis() {
     run_suite("xmlconf/oasis/oasis.xml");
 }
 
-#[test] fn sun_valid() {
+#[test]
+fn sun_valid() {
     run_suite("xmlconf/sun/sun-valid.xml");
 }
 
-#[test] fn sun_ill_formed() {
+#[test]
+fn sun_ill_formed() {
     run_suite("xmlconf/sun/sun-not-wf.xml");
 }
 
-#[test] fn japanese() {
+#[test]
+fn japanese() {
     run_suite("xmlconf/japanese/japanese.xml");
 }
 
-#[test] fn xmltest() {
+#[test]
+fn xmltest() {
     run_suite("xmlconf/xmltest/xmltest.xml");
 }
 
-#[test] fn own_tests() {
+#[test]
+fn own_tests() {
     run_suite("tests.xml");
 }
-

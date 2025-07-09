@@ -2,7 +2,7 @@
 
 use std::fmt;
 use std::fs::File;
-use std::io::{stderr, BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write, stderr};
 use std::path::Path;
 use xml::reader::ParserConfig2;
 
@@ -940,12 +940,11 @@ fn skip() {
                     assert_eq!(Ok(XmlEvent::EndElement{ name: OwnedName::local("a".to_string()) }), reader.next());
                     assert_eq!(Ok(XmlEvent::EndDocument), reader.next());
                     break 'outer;
-                } else {
-                    // Should never see the "c" element, since it should be skipped!
-                    assert_ne!(name.local_name, "c");
-                    // Should never see the "d" element, since it should be skipped!
-                    assert_ne!(name.local_name, "d");
                 }
+                // Should never see the "c" element, since it should be skipped!
+                assert_ne!(name.local_name, "c");
+                // Should never see the "d" element, since it should be skipped!
+                assert_ne!(name.local_name, "d");
             }
             XmlEvent::EndElement { name, .. } => {
                 // Should never see the "c" element, since it should be skipped!
@@ -966,7 +965,7 @@ fn skip() {
 
 struct Name<'a>(&'a OwnedName);
 
-impl<'a> fmt::Display for Name<'a> {
+impl fmt::Display for Name<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(ref namespace) = self.0.namespace {
             write!(f, "{{{namespace}}}")?;
@@ -982,7 +981,7 @@ impl<'a> fmt::Display for Name<'a> {
 
 struct Event<'a>(&'a Result<XmlEvent>);
 
-impl<'a> fmt::Display for Event<'a> {
+impl fmt::Display for Event<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let empty = String::new();
         match *self.0 {

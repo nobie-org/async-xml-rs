@@ -1,5 +1,5 @@
-use crate::reader::lexer::Token;
 use crate::Encoding;
+use crate::reader::lexer::Token;
 
 use std::borrow::Cow;
 use std::error::Error as _;

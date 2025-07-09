@@ -175,6 +175,7 @@ impl<'r> EventReader<&'r [u8]> {
     /// A convenience method to create an `XmlReader` from a string slice.
     #[inline]
     #[must_use]
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(source: &'r str) -> Self {
         EventReader::new(source.as_bytes())
     }
