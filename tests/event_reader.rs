@@ -660,12 +660,17 @@ fn issue_105_unexpected_double_dash() {
 }
 
 #[test]
-fn issue_attribues_have_no_default_namespace() {
+fn attribues_are_not_supposed_to_have_a_default_namespace() {
     test(
-        br#"<hello xmlns="urn:foo" x="y"/>"#,
+        br#"<hello xmlns="urn:foo" no_namespace_here="really"/>"#,
+        // This is not a bug. That's how XML works.
+        // Attributes *do not* inherit namespace of the element.
+        // If an attribute doesn't have a prefix, it doesn't have a namespace.
+        // I know it's weird.
+        // https://www.w3.org/TR/xml-names/#defaulting
         br#"
             |StartDocument(1.0, UTF-8)
-            |StartElement({urn:foo}hello [x="y"])
+            |StartElement({urn:foo}hello [no_namespace_here="really"])
             |EndElement({urn:foo}hello)
             |EndDocument
         "#,
