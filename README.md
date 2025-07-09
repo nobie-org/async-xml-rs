@@ -53,7 +53,7 @@ xml-rs uses [Cargo](https://crates.io), so add it with `cargo add xml` or modify
 
 ```toml
 [dependencies]
-xml = "0.8.20"
+xml = "1.0"
 ```
 
 The package exposes a single crate called `xml`.
@@ -214,3 +214,12 @@ Bug reports
 
 Please report issues at: <https://github.com/kornelski/xml-rs/issues>.
 
+Before reporting issues with XML conformance, please find the relevant section in the XML spec first.
+
+## Upgrading from 0.8 to 1.0
+
+It should be pretty painless:
+
+* Change `xml-rs = "0.8"` to `xml = "1.0"` in `Cargo.toml`
+* If you have an exchaustive `match` on `WriterEvent`, add `_ => {}`. There's no change for reader events.
+* If you were creating `ParserConfig` using a struct literal, please use `ParserConfig::new()` and the setters.

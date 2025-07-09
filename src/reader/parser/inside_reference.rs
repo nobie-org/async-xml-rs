@@ -33,7 +33,7 @@ impl PullParser {
                 };
                 if let Some(c) = c {
                     self.buf.push(c);
-                } else if let Some(v) = self.config.c.extra_entities.get(&name) {
+                } else if let Some(v) = self.config.extra_entities.get(&name) {
                     self.buf.push_str(v);
                 } else if let Some(v) = self.entities.get(&name) {
                     if self.state_after_reference == State::OutsideTag {
@@ -68,8 +68,8 @@ impl PullParser {
         };
         match char::from_u32(val) {
             Some(c) if self.is_valid_xml_char(c) => Ok(c),
-            Some(_) if self.config.c.replace_unknown_entity_references => Ok('\u{fffd}'),
-            None if self.config.c.replace_unknown_entity_references => Ok('\u{fffd}'),
+            Some(_) if self.config.replace_unknown_entity_references => Ok('\u{fffd}'),
+            None if self.config.replace_unknown_entity_references => Ok('\u{fffd}'),
             _ => Err(SyntaxError::InvalidCharacterEntity(val)),
         }
     }

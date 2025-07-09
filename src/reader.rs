@@ -9,9 +9,14 @@ use std::result;
 
 use crate::common::{Position, TextPosition};
 
-pub use self::config::{ParserConfig, ParserConfig2};
+pub use self::config::ParserConfig;
 pub use self::error::{Error, ErrorKind};
 pub use self::events::XmlEvent;
+
+// back compat
+#[doc(hidden)]
+#[deprecated(note = "Merged into ParserConfig")]
+pub type ParserConfig2 = ParserConfig;
 
 use self::parser::PullParser;
 
@@ -37,13 +42,16 @@ impl<R: Read> EventReader<R> {
     /// Creates a new reader, consuming the given stream. The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
     #[inline]
     pub fn new(source: R) -> Self {
-        Self::new_with_config(source, ParserConfig2::new())
+        Self::new_with_config(source, ParserConfig::new())
     }
 
     /// Creates a new reader with the provded configuration, consuming the given stream. The reader should be wrapped in a `BufReader`, otherwise parsing may be very slow.
     #[inline]
-    pub fn new_with_config(source: R, config: impl Into<ParserConfig2>) -> Self {
-        Self { source, parser: PullParser::new(config) }
+    pub fn new_with_config(source: R, config: impl Into<ParserConfig>) -> Self {
+        Self {
+            source,
+            parser: PullParser::new(config),
+        }
     }
 
     /// Pulls and returns next XML event from the stream.

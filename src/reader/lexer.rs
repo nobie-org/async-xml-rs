@@ -10,7 +10,7 @@ use std::collections::VecDeque;
 use std::io::Read;
 use std::{fmt, result};
 
-use super::ParserConfig2;
+use super::ParserConfig;
 
 /// `Token` represents a single lexeme of an XML document. These lexemes
 /// are used to perform actual parsing.
@@ -244,7 +244,7 @@ impl Position for Lexer {
 
 impl Lexer {
     /// Returns a new lexer with default state.
-    pub(crate) fn new(config: &ParserConfig2) -> Self {
+    pub(crate) fn new(config: &ParserConfig) -> Self {
         Self {
             reader: CharReader::new(),
             pos: TextPosition::new(),
@@ -644,7 +644,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::Position, reader::ParserConfig2};
+    use crate::{common::Position, reader::ParserConfig};
     use std::io::{BufReader, Cursor};
 
     use super::{Lexer, Token};
@@ -674,7 +674,7 @@ mod tests {
     );
 
     fn make_lex_and_buf(s: &str) -> (Lexer, BufReader<Cursor<Vec<u8>>>) {
-        (Lexer::new(&ParserConfig2::default()), BufReader::new(Cursor::new(s.to_owned().into_bytes())))
+        (Lexer::new(&ParserConfig::default()), BufReader::new(Cursor::new(s.to_owned().into_bytes())))
     }
 
     #[test]

@@ -147,7 +147,7 @@ impl Emitter {
            (self.indent_level > 0 || self.wrote_markup()) {
             let indent_level = self.indent_level;
             self.write_newline(target, indent_level)?;
-            if self.indent_level > 0 && self.config.indent_string.len() > 0 {
+            if self.indent_level > 0 && !self.config.indent_string.is_empty() {
                 self.after_markup();
             }
         }

@@ -4,7 +4,6 @@ use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write, stderr};
 use std::path::Path;
-use xml::reader::ParserConfig2;
 
 use xml::common::Position;
 use xml::name::OwnedName;
@@ -870,7 +869,7 @@ fn test_files(input_path: &str, output_path: &str, config: ParserConfig, test_po
     let should_print = std::env::var("PRINT_SPEC").map_or(false, |val| val == "1");
     let mut out = if should_print { Some(vec![]) } else { None };
 
-    test_inner(&input, &output, config.into(), test_position, out.as_mut());
+    test_inner(&input, &output, config, test_position, out.as_mut());
 
     if let Some(out) = out {
         std::fs::write(Path::new("tests").join(output_path), out).unwrap();
@@ -878,7 +877,7 @@ fn test_files(input_path: &str, output_path: &str, config: ParserConfig, test_po
 }
 
 #[track_caller]
-fn test(input: &[u8], output: &[u8], config: impl Into<ParserConfig2>, test_position: bool) {
+fn test(input: &[u8], output: &[u8], config: impl Into<ParserConfig>, test_position: bool) {
     let should_print = std::env::var("PRINT_SPEC").map_or(false, |val| val == "1");
     let mut out = if should_print { Some(vec![]) } else { None };
 
@@ -890,7 +889,7 @@ fn test(input: &[u8], output: &[u8], config: impl Into<ParserConfig2>, test_posi
 }
 
 #[track_caller]
-fn test_inner(input: &[u8], output: &[u8], config: ParserConfig2, test_position: bool, mut out: Option<&mut Vec<u8>>) {
+fn test_inner(input: &[u8], output: &[u8], config: ParserConfig, test_position: bool, mut out: Option<&mut Vec<u8>>) {
     let mut reader = config.create_reader(input);
     let mut spec_lines = BufReader::new(output).lines()
         .map(std::result::Result::unwrap)

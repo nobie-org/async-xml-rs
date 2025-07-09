@@ -9,7 +9,7 @@ impl PullParser {
     pub fn inside_cdata(&mut self, t: Token) -> Option<Result> {
         match t {
             Token::CDataEnd => {
-                let event = if self.config.c.cdata_to_characters {
+                let event = if self.config.cdata_to_characters {
                     // start called push_pos, but there will be no event to pop it
                     if self.buf.is_empty() {
                         self.next_pos();

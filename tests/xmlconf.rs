@@ -1,6 +1,5 @@
 //! W3C XML conformance test suite <https://www.w3.org/XML/Test/>
 
-use xml::reader::ParserConfig2;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
@@ -27,14 +26,14 @@ fn ensure_unzipped() {
 #[track_caller]
 fn run_suite(suite_rel_path: &str) {
     run_suite_with_config(suite_rel_path, ParserConfig::default().allow_multiple_root_elements(true));
-    run_suite_with_config(suite_rel_path, ParserConfig::default().coalesce_characters(false).into());
-    run_suite_with_config(suite_rel_path, ParserConfig::default().ignore_comments(false).into());
-    run_suite_with_config(suite_rel_path, ParserConfig::new().trim_whitespace(true).whitespace_to_characters(true).cdata_to_characters(true).ignore_comments(true).coalesce_characters(true).into());
+    run_suite_with_config(suite_rel_path, ParserConfig::default().coalesce_characters(false));
+    run_suite_with_config(suite_rel_path, ParserConfig::default().ignore_comments(false));
+    run_suite_with_config(suite_rel_path, ParserConfig::new().trim_whitespace(true).whitespace_to_characters(true).cdata_to_characters(true).ignore_comments(true).coalesce_characters(true));
     run_suite_with_config(suite_rel_path, ParserConfig::default().allow_multiple_root_elements(false).ignore_root_level_whitespace(false));
 }
 
 #[track_caller]
-fn run_suite_with_config(suite_rel_path: &str, parser_config: ParserConfig2) {
+fn run_suite_with_config(suite_rel_path: &str, parser_config: ParserConfig) {
     ensure_unzipped();
 
     let suite_path = Path::new("tests").join(suite_rel_path);
@@ -110,7 +109,7 @@ fn run_suite_with_config(suite_rel_path: &str, parser_config: ParserConfig2) {
 }
 
 #[track_caller]
-fn expect_well_formed(xml_path: &Path, msg: &str, parser_config: ParserConfig2) -> Result<(), Box<dyn std::error::Error>> {
+fn expect_well_formed(xml_path: &Path, msg: &str, parser_config: ParserConfig) -> Result<(), Box<dyn std::error::Error>> {
     let f = BufReader::new(File::open(xml_path).expect("testcase"));
     let r = parser_config.create_reader(f);
     let mut w = EventWriter::new(Vec::new());

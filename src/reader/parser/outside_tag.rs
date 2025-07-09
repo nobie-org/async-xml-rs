@@ -14,8 +14,8 @@ impl PullParser {
             Token::Character(c) => {
                 if is_whitespace_char(c) {
                     // skip whitespace outside of the root element
-                    if (self.config.c.trim_whitespace && self.buf.is_empty()) ||
-                        (self.depth() == 0 && self.config.c.ignore_root_level_whitespace) {
+                    if (self.config.trim_whitespace && self.buf.is_empty()) ||
+                        (self.depth() == 0 && self.config.ignore_root_level_whitespace) {
                             return None;
                     }
                 } else {
@@ -72,13 +72,13 @@ impl PullParser {
                 None
             },
 
-            Token::CommentStart if self.config.c.coalesce_characters && self.config.c.ignore_comments => {
+            Token::CommentStart if self.config.coalesce_characters && self.config.ignore_comments => {
                 let next_event = self.set_encountered(Encountered::Comment);
                 // We need to switch the lexer into a comment mode inside comments
                 self.into_state(State::InsideComment, next_event)
             }
 
-            Token::CDataStart if self.depth() > 0 && self.config.c.coalesce_characters && self.config.c.cdata_to_characters => {
+            Token::CDataStart if self.depth() > 0 && self.config.coalesce_characters && self.config.cdata_to_characters => {
                 if self.buf.is_empty() {
                     self.push_pos(); // CDataEnd will pop pos if the buffer remains empty
                 }
@@ -91,14 +91,14 @@ impl PullParser {
                 // or a whitespace
                 let mut next_event = if self.buf_has_data() {
                     let buf = self.take_buf();
-                    if self.inside_whitespace && self.config.c.trim_whitespace {
+                    if self.inside_whitespace && self.config.trim_whitespace {
                         // there will be no event emitted for this, but start of buffering has pushed a pos
                         self.next_pos();
                         None
-                    } else if self.inside_whitespace && !self.config.c.whitespace_to_characters {
+                    } else if self.inside_whitespace && !self.config.whitespace_to_characters {
                         debug_assert!(buf.chars().all(|ch| ch.is_whitespace()), "ws={buf:?}");
                         Some(Ok(XmlEvent::Whitespace(buf)))
-                    } else if self.config.c.trim_whitespace {
+                    } else if self.config.trim_whitespace {
                         Some(Ok(XmlEvent::Characters(buf.trim_matches(is_whitespace_char).into())))
                     } else {
                         Some(Ok(XmlEvent::Characters(buf)))
@@ -108,7 +108,7 @@ impl PullParser {
 
                 // pos is popped whenever an event is emitted, so pushes must happen only if there will be an event to balance it
                 // and ignored comments don't pop
-                if t != Token::CommentStart || !self.config.c.ignore_comments {
+                if t != Token::CommentStart || !self.config.ignore_comments {
                     self.push_pos();
                 }
                 match t {
@@ -169,8 +169,8 @@ impl PullParser {
                 self.inside_whitespace = true;
 
                 // skip whitespace outside of the root element
-                if (self.config.c.trim_whitespace && self.buf.is_empty()) ||
-                    (self.depth() == 0 && self.config.c.ignore_root_level_whitespace) {
+                if (self.config.trim_whitespace && self.buf.is_empty()) ||
+                    (self.depth() == 0 && self.config.ignore_root_level_whitespace) {
                         return self.into_state(State::OutsideTag, next_event);
                 }
 

@@ -4,7 +4,7 @@ use crate::common::{is_xml10_char, is_xml11_char, is_xml11_char_not_restricted, 
 use crate::common::{Position, TextPosition, XmlVersion};
 use crate::name::OwnedName;
 use crate::namespace::NamespaceStack;
-use crate::reader::config::ParserConfig2;
+use crate::reader::config::ParserConfig;
 use crate::reader::error::SyntaxError;
 use crate::reader::events::XmlEvent;
 use crate::reader::indexset::AttributesSet;
@@ -59,7 +59,7 @@ pub type Result = super::Result<XmlEvent>;
 
 /// Pull-based XML parser.
 pub(crate) struct PullParser {
-    config: ParserConfig2,
+    config: ParserConfig,
     lexer: Lexer,
     st: State,
     state_after_reference: State,
@@ -96,13 +96,12 @@ enum Encountered {
 impl PullParser {
     /// Returns a new parser using the given config.
     #[inline]
-    pub fn new(config: impl Into<ParserConfig2>) -> Self {
-        let config = config.into();
-        Self::new_with_config2(config)
+    pub fn new(config: impl Into<ParserConfig>) -> Self {
+        Self::new_with_config(config.into())
     }
 
     #[inline]
-    fn new_with_config2(config: ParserConfig2) -> Self {
+    fn new_with_config(config: ParserConfig) -> Self {
         let mut lexer = Lexer::new(&config);
         if let Some(enc) = config.override_encoding {
             lexer.set_encoding(enc);
@@ -145,7 +144,7 @@ impl PullParser {
     }
 
     /// Checks if this parser ignores the end of stream errors.
-    pub fn is_ignoring_end_of_stream(&self) -> bool { self.config.c.ignore_end_of_stream }
+    pub fn is_ignoring_end_of_stream(&self) -> bool { self.config.ignore_end_of_stream }
 
     /// Retrieves the Doctype from the document if any
     #[inline]
@@ -379,7 +378,7 @@ impl PullParser {
             } else {  // self.st != State::OutsideTag
                 self.error(SyntaxError::UnexpectedEof)  // TODO: add expected hint?
             }
-        } else if self.config.c.ignore_end_of_stream {
+        } else if self.config.ignore_end_of_stream {
             self.final_result = None;
             self.lexer.reset_eof_handled();
             return self.error(SyntaxError::UnbalancedRootElement);
@@ -754,7 +753,7 @@ mod tests {
         expect_event!(r, p, Err(_)); // ---> is forbidden in comments
 
         let (mut r, mut p) = test_data!(r"<x><!--<text&x;> <!--></x>");
-        p.config.c.ignore_comments = false;
+        p.config.ignore_comments = false;
         expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
         expect_event!(r, p, Ok(XmlEvent::StartElement { .. }));
         expect_event!(r, p, Ok(XmlEvent::Comment(s)) => s == "<text&x;> <!");

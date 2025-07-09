@@ -7,7 +7,7 @@ use super::{PullParser, Result, State};
 impl PullParser {
     pub fn inside_comment(&mut self, t: Token) -> Option<Result> {
         match t {
-            Token::CommentEnd if self.config.c.ignore_comments => {
+            Token::CommentEnd if self.config.ignore_comments => {
                 self.into_state_continue(State::OutsideTag)
             },
 
@@ -20,7 +20,7 @@ impl PullParser {
                 Some(self.error(SyntaxError::InvalidCharacterEntity(c as u32)))
             },
 
-            _ if self.config.c.ignore_comments => None, // Do not modify buffer if ignoring the comment
+            _ if self.config.ignore_comments => None, // Do not modify buffer if ignoring the comment
 
             _ => {
                 if self.buf.len() > self.config.max_data_length {
