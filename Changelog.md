@@ -2,6 +2,7 @@
 
 * Marked structs as `#[non_exhaustive]`
 * Merged `ParserConfig2` back into `ParserConfig`
+* Added option to the writer to pass through XML markup unmodified
 
 ## Version 0.8.27
 

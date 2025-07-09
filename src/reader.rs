@@ -59,6 +59,7 @@ impl<R: Read> EventReader<R> {
     /// If this returns [Err] or [`XmlEvent::EndDocument`] then further calls to
     /// this method will return this event again.
     #[inline]
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<XmlEvent> {
         self.parser.next(&mut self.source)
     }

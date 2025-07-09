@@ -93,8 +93,6 @@ pub struct ParserConfig {
     ///
     /// By default any whitespace that is not enclosed within at least one level of elements will be
     /// ignored. Setting this value to false will cause root level whitespace events to be emitted.
-    ///
-    /// **There are configuration options – see methods below**
     pub ignore_root_level_whitespace: bool,
 
     /// Use this encoding as the default. Necessary for UTF-16 files without BOM.
@@ -109,6 +107,7 @@ pub struct ParserConfig {
 
     /// Abort if custom entities create a string longer than this
     pub max_entity_expansion_length: usize,
+
     /// Entities can expand into other entities this many times (be careful about exponential cost!)
     pub max_entity_expansion_depth: u8,
 

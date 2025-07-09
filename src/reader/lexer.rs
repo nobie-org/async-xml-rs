@@ -429,6 +429,7 @@ impl Lexer {
         Ok(())
     }
 
+    #[allow(clippy::needless_pass_by_ref_mut)]
     fn handle_error(&mut self, chunk: &'static str, c: char) -> Result {
         debug_assert!(!chunk.is_empty());
 
