@@ -13,6 +13,7 @@ use crate::writer::config::EmitterConfig;
 
 /// An error which may be returned by `XmlWriter` when writing XML events.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum EmitterError {
     /// An I/O error occured in the underlying `Write` instance.
     Io(io::Error),
@@ -30,6 +31,19 @@ pub enum EmitterError {
     /// End element name is not specified when it is needed, for example, when automatic
     /// closing is not enabled in configuration.
     EndElementNameIsNotSpecified,
+}
+
+impl Clone for EmitterError {
+    #[cold]
+    fn clone(&self) -> Self {
+        match self {
+            Self::Io(io_error) => Self::Io(io::Error::new(io_error.kind(), io_error.to_string())),
+            Self::DocumentStartAlreadyEmitted => Self::DocumentStartAlreadyEmitted,
+            Self::LastElementNameNotAvailable => Self::LastElementNameNotAvailable,
+            Self::EndElementNameIsNotEqualToLastStartElementName => Self::EndElementNameIsNotEqualToLastStartElementName,
+            Self::EndElementNameIsNotSpecified => Self::EndElementNameIsNotSpecified,
+        }
+    }
 }
 
 impl From<io::Error> for EmitterError {
@@ -54,6 +68,12 @@ impl fmt::Display for EmitterError {
 }
 
 impl Error for EmitterError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Io(e) => e.source(),
+            _ => None,
+        }
+    }
 }
 
 /// A result type yielded by `XmlWriter`.

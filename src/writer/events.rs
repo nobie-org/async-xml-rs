@@ -6,6 +6,7 @@ use crate::attribute::Attribute;
 use crate::common::XmlVersion;
 use crate::name::Name;
 use crate::namespace::{Namespace, NS_NO_PREFIX};
+use crate::reader::ErrorKind;
 
 /// A part of an XML output stream.
 ///
@@ -283,9 +284,6 @@ impl<'a> TryFrom<&'a crate::reader::XmlEvent> for XmlEvent<'a> {
     type Error = crate::reader::Error;
 
     fn try_from(event: &crate::reader::XmlEvent) -> Result<XmlEvent<'_>, Self::Error> {
-        event.as_writer_event().ok_or(crate::reader::Error {
-            pos: crate::common::TextPosition::new(),
-            kind: crate::reader::ErrorKind::UnexpectedEof,
-        })
+        Ok(event.as_writer_event().ok_or(ErrorKind::UnexpectedEof)?)
     }
 }

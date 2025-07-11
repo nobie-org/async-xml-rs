@@ -6,10 +6,10 @@ use crate::name::OwnedName;
 use crate::namespace::NamespaceStack;
 use crate::reader::config::ParserConfig;
 use crate::reader::error::SyntaxError;
+use crate::reader::error::Error;
 use crate::reader::events::XmlEvent;
 use crate::reader::indexset::AttributesSet;
 use crate::reader::lexer::{Lexer, Token};
-use super::{Error, ErrorKind};
 
 use std::collections::HashMap;
 use std::io::Read;
@@ -185,7 +185,7 @@ impl Position for PullParser {
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum State {
+pub(crate) enum State {
     OutsideTag,
     InsideOpeningTag(OpeningTagSubstate),
     InsideClosingTag(ClosingTagSubstate),
@@ -199,7 +199,7 @@ pub enum State {
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum DoctypeSubstate {
+pub(crate) enum DoctypeSubstate {
     Outside,
     String,
     InsideName,
@@ -220,7 +220,7 @@ pub enum DoctypeSubstate {
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum OpeningTagSubstate {
+pub(crate) enum OpeningTagSubstate {
     InsideName,
 
     InsideTag,
@@ -233,19 +233,19 @@ pub enum OpeningTagSubstate {
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum ClosingTagSubstate {
+pub(crate) enum ClosingTagSubstate {
     CTInsideName,
     CTAfterName,
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum ProcessingInstructionSubstate {
+pub(crate) enum ProcessingInstructionSubstate {
     PIInsideName,
     PIInsideData,
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum DeclarationSubstate {
+pub(crate) enum DeclarationSubstate {
     BeforeVersion,
     InsideVersion,
     AfterVersion,
@@ -400,10 +400,7 @@ impl PullParser {
     #[cold]
     #[allow(clippy::needless_pass_by_value)]
     fn error(&self, e: SyntaxError) -> Result {
-        Err(Error {
-            pos: self.lexer.position(),
-            kind: ErrorKind::Syntax(e.to_cow()),
-        })
+        Err(Error::syntax(e.to_cow(), self.lexer.position()))
     }
 
     #[inline]
@@ -782,7 +779,7 @@ mod tests {
 
     #[test]
     fn opening_tag_in_attribute_value() {
-        use crate::reader::error::{SyntaxError, Error, ErrorKind};
+        use crate::reader::error::{SyntaxError, Error};
 
         let (mut r, mut p) = test_data!(r#"
             <a attr="zzz<zzz" />
@@ -790,16 +787,12 @@ mod tests {
 
         expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
         expect_event!(r, p, Err(ref e) =>
-            *e == Error {
-                kind: ErrorKind::Syntax(SyntaxError::UnexpectedOpeningTag.to_cow()),
-                pos: TextPosition { row: 1, column: 24 }
-            }
-        );
+            *e == Error::syntax(SyntaxError::UnexpectedOpeningTag.to_cow(), TextPosition { row: 1, column: 24 }));
     }
 
     #[test]
     fn processing_instruction_in_attribute_value() {
-        use crate::reader::error::{SyntaxError, Error, ErrorKind};
+        use crate::reader::error::{SyntaxError, Error};
 
         let (mut r, mut p) = test_data!(r#"
             <y F="<?abc"><x G="/">
@@ -807,11 +800,8 @@ mod tests {
 
         expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
         expect_event!(r, p, Err(ref e) =>
-            *e == Error {
-                kind: ErrorKind::Syntax(SyntaxError::UnexpectedOpeningTag.to_cow()),
-                pos: TextPosition { row: 1, column: 18 }
-            }
-        );
+            *e == Error::syntax(SyntaxError::UnexpectedOpeningTag.to_cow(),
+                TextPosition { row: 1, column: 18 }));
     }
 
     #[test]

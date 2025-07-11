@@ -4,7 +4,7 @@
 
 use crate::common::{is_name_char, is_whitespace_char, is_xml10_char, is_xml11_char, Position, TextPosition};
 use crate::reader::error::SyntaxError;
-use crate::reader::{Error, ErrorKind};
+use crate::reader::Error;
 use crate::util::{CharReader, Encoding};
 use std::collections::VecDeque;
 use std::io::Read;
@@ -355,10 +355,7 @@ impl Lexer {
     #[cold]
     #[allow(clippy::needless_pass_by_value)]
     fn error(&self, e: SyntaxError) -> Error {
-        Error {
-            pos: self.position(),
-            kind: ErrorKind::Syntax(e.to_cow()),
-        }
+        Error::syntax(e.to_cow(), self.position())
     }
 
     #[inline(never)]

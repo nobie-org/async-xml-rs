@@ -3,7 +3,7 @@ use std::io::{self, Read};
 use std::str::{self, FromStr};
 
 #[derive(Debug)]
-pub enum CharReadError {
+pub(crate) enum CharReadError {
     UnexpectedEof,
     Utf8(str::Utf8Error),
     Io(io::Error),

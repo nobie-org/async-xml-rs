@@ -1,5 +1,6 @@
 use crate::Encoding;
 use crate::reader::lexer::Token;
+use crate::writer::Error as EmitterError;
 
 use std::borrow::Cow;
 use std::error::Error as _;
@@ -20,6 +21,8 @@ pub enum ErrorKind {
     Utf8(str::Utf8Error),
     /// The document ended while they were elements/comments/etc. still open
     UnexpectedEof,
+    /// [Writer error](crate::writer::Error) for convenience of using a single [`Error`] type
+    EmitterError(Box<EmitterError>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -137,7 +140,7 @@ pub struct Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8};
+        use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8, EmitterError};
 
         write!(f, "{} ", self.pos)?;
         match &self.kind {
@@ -145,6 +148,7 @@ impl fmt::Display for Error {
             Utf8(reason) => reason.fmt(f),
             Syntax(msg) => f.write_str(msg),
             UnexpectedEof => f.write_str("Unexpected EOF"),
+            EmitterError(e) => e.fmt(f),
         }
     }
 }
@@ -166,9 +170,24 @@ impl Error {
     pub fn kind(&self) -> &ErrorKind {
         &self.kind
     }
+
+    pub(crate) fn syntax(syntax_msg: Cow<'static, str>, pos: TextPosition) -> Self {
+        Self {
+            kind: ErrorKind::Syntax(syntax_msg),
+            pos
+        }
+    }
 }
 
 impl error::Error for Error {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match &self.kind {
+            ErrorKind::Io(e) => e.source(),
+            ErrorKind::Utf8(e) => Some(e),
+            ErrorKind::EmitterError(e) => Some(e),
+            _ => None,
+        }
+    }
 }
 
 impl<'a, P, M> From<(&'a P, M)> for Error where P: Position, M: Into<Cow<'static, str>> {
@@ -206,18 +225,36 @@ impl From<io::Error> for Error {
     }
 }
 
+impl From<EmitterError> for Error {
+    #[cold]
+    fn from(e: EmitterError) -> Self {
+        Self {
+            pos: TextPosition::new(),
+            kind: ErrorKind::EmitterError(Box::new(e)),
+        }
+    }
+}
+
+impl From<ErrorKind> for Error {
+    fn from(kind: ErrorKind) -> Self {
+        Self{ kind, pos: TextPosition::new() }
+    }
+}
+
 impl Clone for ErrorKind {
     #[cold]
     fn clone(&self) -> Self {
-        use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8};
+        use self::ErrorKind::{Io, Syntax, UnexpectedEof, Utf8, EmitterError};
         match self {
             UnexpectedEof => UnexpectedEof,
             Utf8(reason) => Utf8(*reason),
             Io(io_error) => Io(io::Error::new(io_error.kind(), io_error.to_string())),
             Syntax(msg) => Syntax(msg.clone()),
+            EmitterError(e) => EmitterError(e.clone()),
         }
     }
 }
+
 impl PartialEq for ErrorKind {
     #[allow(deprecated)]
     fn eq(&self, other: &Self) -> bool {
@@ -230,7 +267,6 @@ impl PartialEq for ErrorKind {
                 left.description() == right.description(),
             (Syntax(left), Syntax(right)) =>
                 left == right,
-
             (_, _) => false,
         }
     }
