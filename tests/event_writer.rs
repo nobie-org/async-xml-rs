@@ -286,6 +286,7 @@ fn accidental_cdata_suffix_in_characters_is_escaped() {
         unwrap_all! {
             w.write(XmlEvent::start_element("root"));
             w.write(XmlEvent::characters("[[a]]>b"));
+            w.write(XmlEvent::cdata("c]]>data"));
             w.write(XmlEvent::end_element())
         }
     }
@@ -296,6 +297,8 @@ fn accidental_cdata_suffix_in_characters_is_escaped() {
         assert!(matches!(r.next().unwrap(), XmlEvent::StartDocument { .. }));
         assert!(matches!(r.next().unwrap(), XmlEvent::StartElement { .. }));
         assert_eq!(r.next().unwrap(), XmlEvent::Characters("[[a]]>b".into()));
+        assert_eq!(r.next().unwrap(), XmlEvent::CData("c]]".into()));
+        assert_eq!(r.next().unwrap(), XmlEvent::CData(">data".into()));
         assert!(matches!(r.next().unwrap(), XmlEvent::EndElement { .. }));
         assert!(matches!(r.next().unwrap(), XmlEvent::EndDocument));
     }
