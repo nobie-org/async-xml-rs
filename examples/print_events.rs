@@ -51,6 +51,9 @@ fn main() {
                     XmlEvent::Whitespace(data) => {
                         println!(r#"Whitespace("{}")"#, data.escape_debug());
                     },
+                    XmlEvent::Doctype { syntax } => {
+                        println!(r#"Doctype("{}")"#, syntax.escape_debug());
+                    },
                 }
             },
             Err(e) => {

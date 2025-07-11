@@ -111,6 +111,8 @@ impl<R: Read> EventReader<R> {
     ///
     /// Available only after the root `StartElement` event
     #[inline]
+    #[deprecated(note = "there is `XmlEvent::Doctype` now")]
+    #[allow(deprecated)]
     pub fn doctype(&self) -> Option<&str> {
         self.parser.doctype()
     }

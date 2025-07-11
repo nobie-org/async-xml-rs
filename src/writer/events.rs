@@ -99,6 +99,9 @@ pub enum XmlEvent<'a> {
     /// reader event. Care must be taken when using this event, as it can easily result
     /// non-well-formed documents.
     RawCharacters(&'a str),
+
+    /// Syntax of the `DOCTYPE`, everyhing including `<` and `>`
+    Doctype(&'a str),
 }
 
 impl<'a> XmlEvent<'a> {

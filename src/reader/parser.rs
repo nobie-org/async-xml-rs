@@ -148,6 +148,7 @@ impl PullParser {
 
     /// Retrieves the Doctype from the document if any
     #[inline]
+    #[deprecated(note = "there is `XmlEvent::Doctype` now")]
     pub fn doctype(&self) -> Option<&str> {
         self.data.doctype.as_deref()
     }

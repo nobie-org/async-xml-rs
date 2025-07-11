@@ -1,4 +1,5 @@
 StartDocument(1.0, utf-8)
+Doctype("<!DOCTYPE data SYSTEM \"abcd.dtd\">")
 StartElement(p)
 StartElement(a)
 Characters("test ©≂̸")

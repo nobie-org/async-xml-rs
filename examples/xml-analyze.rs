@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!(
                     "XML document version {}, encoded in {}, {}standalone",
                     version, encoding, if standalone.unwrap_or(false) { "" } else { "not " }
-                )
+                );
             },
             XmlEvent::Doctype { syntax } => {
                 println!("The Doctype is: {syntax}");

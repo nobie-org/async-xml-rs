@@ -137,9 +137,7 @@ impl PullParser {
                         }
                         self.data.doctype = Some(Token::DoctypeStart.to_string());
 
-                        // We don't have a doctype event so skip this position
-                        // FIXME: update when we have a doctype event
-                        self.next_pos();
+                        self.push_pos();
                         self.into_state(State::InsideDoctype(DoctypeSubstate::Outside), next_event)
                     },
 
@@ -194,9 +192,7 @@ impl PullParser {
                 let next_event = self.set_encountered(Encountered::Doctype);
                 self.data.doctype = Some(Token::DoctypeStart.to_string());
 
-                // We don't have a doctype event so skip this position
-                // FIXME: update when we have a doctype event
-                self.next_pos();
+                self.push_pos();
                 self.into_state(State::InsideDoctype(DoctypeSubstate::Outside), next_event)
             },
 

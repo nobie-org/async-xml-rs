@@ -840,6 +840,8 @@ fn retrieve_doctype() {
           stroke="black" />
     </svg>"#;
 
+    let expected = r#"<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">"#;
+
     let mut parser = ParserConfig::new()
         .cdata_to_characters(true)
         .ignore_comments(true)
@@ -847,10 +849,16 @@ fn retrieve_doctype() {
         .create_reader(std::io::Cursor::new(source));
 
     while let Ok(e) = parser.next() {
-        if let XmlEvent::StartElement { .. } = e { break; }
+        match e {
+            XmlEvent::Doctype { syntax } => assert_eq!(syntax, expected),
+            XmlEvent::StartElement { .. } => break,
+            _ => {},
+        }
     }
 
-    assert_eq!(parser.doctype(), Some(r#"<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">"#));
+    #[allow(deprecated)] {
+        assert_eq!(Some(expected), parser.doctype());
+    }
 }
 
 // clones a lot but that's fine
@@ -1007,6 +1015,7 @@ impl fmt::Display for Event<'_> {
                 XmlEvent::CData(ref data) => write!(f, r#"CData("{}")"#, data.escape_debug()),
                 XmlEvent::Characters(ref data) => write!(f, r#"Characters("{}")"#, data.escape_debug()),
                 XmlEvent::Whitespace(ref data) => write!(f, r#"Whitespace("{}")"#, data.escape_debug()),
+                XmlEvent::Doctype { ref syntax } => write!(f, r#"Doctype("{}")"#, syntax.escape_debug()),
             },
             Err(ref e) => e.fmt(f),
         }

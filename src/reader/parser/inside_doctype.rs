@@ -3,6 +3,7 @@ use std::fmt::Write;
 use crate::common::{is_name_char, is_name_start_char, is_whitespace_char};
 use crate::reader::error::SyntaxError;
 use crate::reader::lexer::Token;
+use crate::reader::XmlEvent;
 
 use super::{DoctypeSubstate, PullParser, QuoteToken, Result, State};
 
@@ -17,7 +18,12 @@ impl PullParser {
 
         match substate {
             DoctypeSubstate::Outside => match t {
-                Token::TagEnd => self.into_state_continue(State::OutsideTag),
+                Token::TagEnd => {
+                    let event = XmlEvent::Doctype {
+                        syntax: self.data.doctype.clone().unwrap_or_default()
+                    };
+                    self.into_state_emit(State::OutsideTag, Ok(event))
+                },
                 Token::MarkupDeclarationStart => {
                     self.buf.clear();
                     self.into_state_continue(State::InsideDoctype(DoctypeSubstate::InsideName))

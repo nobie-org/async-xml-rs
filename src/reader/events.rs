@@ -110,6 +110,11 @@ pub enum XmlEvent {
     /// See `pull::ParserConfiguration` structure for more information. When combined with whitespace
     /// trimming, it will eliminate standalone whitespace from the event stream completely.
     Whitespace(String),
+    /// The whole DOCTYPE markup
+    Doctype {
+        /// Everything including `<` and `>`
+        syntax: String,
+    },
 }
 
 impl fmt::Debug for XmlEvent {
@@ -143,7 +148,9 @@ impl fmt::Debug for XmlEvent {
             Self::Characters(data) =>
                 write!(f, "Characters({data})"),
             Self::Whitespace(data) =>
-                write!(f, "Whitespace({data})")
+                write!(f, "Whitespace({data})"),
+            Self::Doctype { syntax } =>
+                write!(f, "Doctype({syntax})"),
         }
     }
 }
@@ -213,6 +220,7 @@ impl XmlEvent {
             Self::CData(data) => Some(crate::writer::events::XmlEvent::CData(data)),
             Self::Characters(data) |
             Self::Whitespace(data) => Some(crate::writer::events::XmlEvent::Characters(data)),
+            Self::Doctype { syntax } => Some(crate::writer::events::XmlEvent::Doctype(syntax)),
             Self::EndDocument => None,
         }
     }
