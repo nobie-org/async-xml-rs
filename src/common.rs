@@ -5,9 +5,10 @@ use std::fmt;
 /// Represents a position inside some textual document.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct TextPosition {
-    /// Row, counting from 0
+    #[doc(hidden)]
     pub row: u64,
-    /// Column, counting from 0
+
+    #[doc(hidden)]
     pub column: u64,
 }
 
@@ -25,8 +26,8 @@ impl TextPosition {
         self.column += u64::from(count);
     }
 
-    /// Advances the position in a line to the next tab position
-    #[inline]
+    #[doc(hidden)]
+    #[deprecated]
     pub fn advance_to_tab(&mut self, width: u8) {
         let width = u64::from(width);
         self.column += width - self.column % width;
@@ -38,12 +39,23 @@ impl TextPosition {
         self.column = 0;
         self.row += 1;
     }
+
+    /// Row, counting from 0. Add 1 to display as users expect!
+    #[must_use]
+    pub fn row(&self) -> u64 {
+        self.row
+    }
+
+    /// Column, counting from 0. Add 1 to display as users expect!
+    #[must_use]
+    pub fn column(&self) -> u64 {
+        self.column
+    }
 }
 
 impl fmt::Debug for TextPosition {
-    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.row + 1, self.column + 1)
+        fmt::Display::fmt(self, f)
     }
 }
 
@@ -89,7 +101,6 @@ impl fmt::Display for XmlVersion {
 }
 
 impl fmt::Debug for XmlVersion {
-    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, f)
     }
