@@ -3,6 +3,7 @@
 * Marked structs as `#[non_exhaustive]`
 * Merged `ParserConfig2` back into `ParserConfig`
 * Added option to the writer to pass through XML markup unmodified
+* `xml-analyze` binary has been moved to examples
 
 ## Version 0.8.27
 

@@ -38,11 +38,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for e in reader {
         let e = e.map_err(|e| format!("Error parsing XML document: {e}"))?;
         match e {
-            XmlEvent::StartDocument { version, encoding, standalone } =>
+            XmlEvent::StartDocument { version, encoding, standalone } => {
                 println!(
                     "XML document version {}, encoded in {}, {}standalone",
                     version, encoding, if standalone.unwrap_or(false) { "" } else { "not " }
-                ),
+                )
+            },
+            XmlEvent::Doctype { syntax } => {
+                println!("The Doctype is: {syntax}");
+            },
             XmlEvent::EndDocument => println!("Document finished"),
             XmlEvent::ProcessingInstruction { .. } => processing_instructions += 1,
             XmlEvent::Whitespace(_) => {}, // can't happen due to configuration
