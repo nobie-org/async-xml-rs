@@ -216,10 +216,10 @@ Please report issues at: <https://github.com/kornelski/xml-rs/issues>.
 
 Before reporting issues with XML conformance, please find the relevant section in the XML spec first.
 
-## Upgrading from 0.8 to 1.0
+## [Upgrading from 0.8 to 1.0](https://github.com/kornelski/xml-rs/blob/main/Changelog.md)
 
 It should be pretty painless:
 
 * Change `xml-rs = "0.8"` to `xml = "1.0"` in `Cargo.toml`
-* If you have an exchaustive `match` on `WriterEvent`, add `_ => {}`. There's no change for reader events.
+* Add `_ => {}` to `match` statements where the compiler complains. A new `Doctype` event has been added, and error enums are non-exhaustive.
 * If you were creating `ParserConfig` using a struct literal, please use `ParserConfig::new()` and the setters.
