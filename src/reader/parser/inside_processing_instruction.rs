@@ -1,12 +1,12 @@
 use crate::common::{is_name_char, is_name_start_char, is_whitespace_char};
 use crate::reader::error::SyntaxError;
-
 use crate::reader::events::XmlEvent;
 use crate::reader::lexer::Token;
+use crate::reader::xml_read::XmlRead;
 
 use super::{DeclarationSubstate, Encountered, ProcessingInstructionSubstate, PullParser, Result, State};
 
-impl PullParser {
+impl<R: XmlRead> PullParser<R> {
     pub fn inside_processing_instruction(&mut self, t: Token, s: ProcessingInstructionSubstate) -> Option<Result> {
         match s {
             ProcessingInstructionSubstate::PIInsideName => match t {

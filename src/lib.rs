@@ -12,6 +12,8 @@
 #![cfg_attr(doctest, doc = include_str!("../README.md"))]
 
 pub use crate::reader::{EventReader, ParserConfig};
+#[cfg(feature = "async")]
+pub use crate::reader::AsyncEventReader;
 pub use crate::util::Encoding;
 pub use crate::writer::{EmitterConfig, EventWriter};
 
