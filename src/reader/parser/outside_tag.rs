@@ -2,13 +2,14 @@ use crate::common::is_whitespace_char;
 use crate::reader::error::SyntaxError;
 use crate::reader::events::XmlEvent;
 use crate::reader::lexer::Token;
+use crate::reader::xml_read::XmlRead;
 
 use super::{
     ClosingTagSubstate, DoctypeSubstate, Encountered, OpeningTagSubstate,
     ProcessingInstructionSubstate, PullParser, Result, State,
 };
 
-impl PullParser {
+impl<R: XmlRead> PullParser<R> {
     pub fn outside_tag(&mut self, t: Token) -> Option<Result> {
         match t {
             Token::Character(c) => {

@@ -4,12 +4,14 @@ use crate::reader::events::XmlEvent;
 use crate::reader::lexer::Token;
 use crate::util::Encoding;
 
+use crate::reader::xml_read::XmlRead;
+
 use super::{
     DeclarationSubstate, Encountered, PullParser, QualifiedNameTarget, Result, State,
     DEFAULT_VERSION,
 };
 
-impl PullParser {
+impl<R: XmlRead> PullParser<R> {
     #[inline(never)]
     fn emit_start_document(&mut self) -> Option<Result> {
         debug_assert!(self.encountered == Encountered::None);
@@ -55,7 +57,7 @@ impl PullParser {
                 _ => Some(self.error(SyntaxError::UnexpectedToken(t))),
             },
 
-            DeclarationSubstate::InsideVersion => self.read_qualified_name(t, QualifiedNameTarget::AttributeNameTarget, |this, token, name| {
+            DeclarationSubstate::InsideVersion => self.read_qualified_name(t, QualifiedNameTarget::Attribute, |this, token, name| {
                 match &*name.local_name {
                     "ersion" if name.namespace.is_none() =>
                         this.into_state_continue(State::InsideDeclaration(
@@ -102,7 +104,7 @@ impl PullParser {
                 _ => Some(self.error(SyntaxError::UnexpectedToken(t))),
             },
 
-            DeclarationSubstate::InsideEncoding => self.read_qualified_name(t, QualifiedNameTarget::AttributeNameTarget, |this, token, name| {
+            DeclarationSubstate::InsideEncoding => self.read_qualified_name(t, QualifiedNameTarget::Attribute, |this, token, name| {
                 match &*name.local_name {
                     "ncoding" if name.namespace.is_none() =>
                         this.into_state_continue(State::InsideDeclaration(
@@ -136,7 +138,7 @@ impl PullParser {
                 _ => Some(self.error(SyntaxError::UnexpectedToken(t))),
             },
 
-            DeclarationSubstate::InsideStandaloneDecl => self.read_qualified_name(t, QualifiedNameTarget::AttributeNameTarget, |this, token, name| {
+            DeclarationSubstate::InsideStandaloneDecl => self.read_qualified_name(t, QualifiedNameTarget::Attribute, |this, token, name| {
                 match &*name.local_name {
                     "tandalone" if name.namespace.is_none() =>
                         this.into_state_continue(State::InsideDeclaration(

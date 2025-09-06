@@ -98,7 +98,7 @@ pub struct Emitter {
 impl Emitter {
     pub fn new(config: EmitterConfig) -> Self {
         let mut indent_stack = Vec::with_capacity(16);
-        indent_stack.push(IndentFlags::WroteNothing);
+        indent_stack.push(IndentFlags::Nothing);
 
         Self {
             config,
@@ -118,9 +118,9 @@ impl Emitter {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 enum IndentFlags {
-    WroteNothing,
-    WroteMarkup,
-    WroteText,
+    Nothing,
+    Markup,
+    Text,
 }
 
 impl Emitter {
@@ -132,25 +132,25 @@ impl Emitter {
 
     #[inline]
     fn wrote_text(&self) -> bool {
-        self.indent_stack.last().map_or(false, |&e| e == IndentFlags::WroteText)
+        self.indent_stack.last().is_some_and(|&e| e == IndentFlags::Text)
     }
 
     #[inline]
     fn wrote_markup(&self) -> bool {
-        self.indent_stack.last().map_or(false, |&e| e == IndentFlags::WroteMarkup)
+        self.indent_stack.last().is_some_and(|&e| e == IndentFlags::Markup)
     }
 
     #[inline]
     fn set_wrote_text(&mut self) {
         if let Some(e) = self.indent_stack.last_mut() {
-            *e = IndentFlags::WroteText;
+            *e = IndentFlags::Text;
         }
     }
 
     #[inline]
     fn set_wrote_markup(&mut self) {
         if let Some(e) = self.indent_stack.last_mut() {
-            *e = IndentFlags::WroteMarkup;
+            *e = IndentFlags::Markup;
         }
     }
 
@@ -180,7 +180,7 @@ impl Emitter {
 
     fn before_start_element<W: Write>(&mut self, target: &mut W) -> Result<()> {
         self.before_markup(target)?;
-        self.indent_stack.push(IndentFlags::WroteNothing);
+        self.indent_stack.push(IndentFlags::Nothing);
         Ok(())
     }
 

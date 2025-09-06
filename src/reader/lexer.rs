@@ -5,9 +5,11 @@
 use crate::common::{is_name_char, is_whitespace_char, is_xml10_char, is_xml11_char, Position, TextPosition};
 use crate::reader::error::SyntaxError;
 use crate::reader::Error;
-use crate::util::{CharReader, Encoding};
+use crate::util::Encoding;
+use crate::reader::xml_read::XmlRead;
+#[cfg(feature = "async")]
+use crate::reader::xml_read::AsyncXmlRead;
 use std::collections::VecDeque;
-use std::io::Read;
 use std::{fmt, result};
 
 use super::ParserConfig;
@@ -218,9 +220,9 @@ macro_rules! dispatch_on_enum_state(
 /// When it is not set, errors will be reported as `Err` objects with a string message.
 /// By default this flag is not set. Use `enable_errors` and `disable_errors` methods
 /// to toggle the behavior.
-pub(crate) struct Lexer {
+pub(crate) struct Lexer<R> {
     st: State,
-    reader: CharReader,
+    pub(crate) reader: R,
     pos: TextPosition,
     head_pos: TextPosition,
     char_queue: VecDeque<char>,
@@ -236,17 +238,17 @@ pub(crate) struct Lexer {
     max_entity_expansion_length: usize,
 }
 
-impl Position for Lexer {
+impl<R> Position for Lexer<R> {
     #[inline]
     /// Returns the position of the last token produced by the lexer
     fn position(&self) -> TextPosition { self.pos }
 }
 
-impl Lexer {
-    /// Returns a new lexer with default state.
-    pub(crate) fn new(config: &ParserConfig) -> Self {
+impl<R: XmlRead> Lexer<R> {
+    /// Returns a new lexer with the provided reader.
+    pub(crate) fn new(reader: R, config: &ParserConfig) -> Self {
         Self {
-            reader: CharReader::new(),
+            reader,
             pos: TextPosition::new(),
             head_pos: TextPosition::new(),
             char_queue: VecDeque::with_capacity(4), // TODO: check size
@@ -263,13 +265,6 @@ impl Lexer {
         }
     }
 
-    pub(crate) fn encoding(&self) -> Encoding {
-        self.reader.encoding
-    }
-
-    pub(crate) fn set_encoding(&mut self, encoding: Encoding) {
-        self.reader.encoding = encoding;
-    }
 
     /// Disables error handling so `next_token` will return `Some(Chunk(..))`
     /// upon invalid lexeme with this lexeme content.
@@ -288,7 +283,7 @@ impl Lexer {
     /// * `Err(reason) where reason: reader::Error` - when an error occurs;
     /// * `Ok(Token::Eof)` - upon end of stream is reached;
     /// * `Ok(token) where token: Token` - in case a complete-token has been read from the stream.
-    pub fn next_token<B: Read>(&mut self, b: &mut B) -> Result<Token> {
+    pub fn next_token(&mut self) -> Result<Token> {
         // Already reached end of buffer
         if self.eof_handled {
             return Ok(Token::Eof);
@@ -308,7 +303,7 @@ impl Lexer {
         }
         // if char_queue is empty, all circular reparsing is done
         self.reparse_depth = 0;
-        while let Some(c) = self.reader.next_char_from(b)? {
+        while let Some(c) = self.reader.read_char()? {
             if c == '\n' {
                 self.head_pos.new_line();
             } else {
@@ -322,6 +317,23 @@ impl Lexer {
         }
 
         self.end_of_stream()
+    }
+}
+
+// Generic impl block for methods that work with any reader type
+impl<R> Lexer<R> {
+    pub(crate) fn encoding(&self) -> Encoding
+    where
+        R: XmlRead,
+    {
+        self.reader.encoding()
+    }
+
+    pub(crate) fn set_encoding(&mut self, encoding: Encoding)
+    where
+        R: XmlRead,
+    {
+        self.reader.set_encoding(encoding);
     }
 
     #[inline(never)]
@@ -640,6 +652,42 @@ impl Lexer {
     }
 }
 
+#[cfg(feature = "async")]
+impl<R: AsyncXmlRead> Lexer<R> {
+    /// Returns the next token from the stream asynchronously.
+    pub async fn next_token_async(&mut self) -> Result<Token> {
+        // Already reached end of buffer
+        if self.eof_handled {
+            return Ok(Token::Eof);
+        }
+        if !self.inside_token {
+            self.pos = self.head_pos;
+            self.inside_token = true;
+        }
+        // Check if we have saved a char or two for ourselves
+        while let Some(c) = self.char_queue.pop_front() {
+            if let Some(t) = self.dispatch_char(c)? {
+                self.inside_token = false;
+                return Ok(t);
+            }
+        }
+        // if char_queue is empty, all circular reparsing is done
+        self.reparse_depth = 0;
+        while let Some(c) = self.reader.read_char().await? {
+            if c == '\n' {
+                self.head_pos.new_line();
+            } else {
+                self.head_pos.advance(1);
+            }
+            if let Some(t) = self.dispatch_char(c)? {
+                self.inside_token = false;
+                return Ok(t);
+            }
+        }
+        self.end_of_stream()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{common::Position, reader::ParserConfig};
@@ -650,14 +698,14 @@ mod tests {
     macro_rules! assert_oks(
         (for $lex:ident and $buf:ident ; $($e:expr)+) => ({
             $(
-                assert_eq!(Ok($e), $lex.next_token(&mut $buf));
+                assert_eq!(Ok($e), $lex.next_token());
              )+
         })
     );
 
     macro_rules! assert_err(
         (for $lex:ident and $buf:ident expect row $r:expr ; $c:expr, $s:expr) => ({
-            let err = $lex.next_token(&mut $buf);
+            let err = $lex.next_token();
             assert!(err.is_err());
             let err = err.unwrap_err();
             assert_eq!($r as u64, err.position().row);
@@ -667,17 +715,22 @@ mod tests {
 
     macro_rules! assert_none(
         (for $lex:ident and $buf:ident) => (
-            assert_eq!(Ok(Token::Eof), $lex.next_token(&mut $buf))
+            assert_eq!(Ok(Token::Eof), $lex.next_token())
         )
     );
 
-    fn make_lex_and_buf(s: &str) -> (Lexer, BufReader<Cursor<Vec<u8>>>) {
-        (Lexer::new(&ParserConfig::default()), BufReader::new(Cursor::new(s.to_owned().into_bytes())))
+    type TestLexerType = Lexer<crate::reader::sync_reader::SyncReader<BufReader<Cursor<Vec<u8>>>>>;
+    type TestBufType = BufReader<Cursor<Vec<u8>>>;
+
+    fn make_lex_and_buf(s: &str) -> (TestLexerType, TestBufType) {
+        let reader = BufReader::new(Cursor::new(s.to_owned().into_bytes()));
+        let sync_reader = crate::reader::sync_reader::SyncReader::new(reader);
+        (Lexer::new(sync_reader, &ParserConfig::default()), BufReader::new(Cursor::new(vec![])))
     }
 
     #[test]
     fn tricky_pi() {
-        let (mut lex, mut buf) = make_lex_and_buf(r"<?x<!-- &??><x>");
+        let (mut lex, _buf) = make_lex_and_buf(r"<?x<!-- &??><x>");
 
         assert_oks!(for lex and buf ;
             Token::ProcessingInstructionStart
@@ -699,7 +752,7 @@ mod tests {
 
     #[test]
     fn reparser() {
-        let (mut lex, mut buf) = make_lex_and_buf(r"&a;");
+        let (mut lex, _buf) = make_lex_and_buf(r"&a;");
 
         assert_oks!(for lex and buf ;
             Token::ReferenceStart
@@ -718,7 +771,7 @@ mod tests {
 
     #[test]
     fn simple_lexer_test() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r#"<a p='q'> x<b z="y">d	</b></a><p/> <?nm ?> <!-- a c --> &nbsp;"#
         );
 
@@ -781,7 +834,7 @@ mod tests {
 
     #[test]
     fn special_chars_test() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r"?x!+ // -| ]z]]"
         );
 
@@ -807,7 +860,7 @@ mod tests {
 
     #[test]
     fn cdata_test() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r"<a><![CDATA[x y ?]]> </a>"
         );
 
@@ -832,7 +885,7 @@ mod tests {
 
     #[test]
     fn cdata_closers_test() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r"<![CDATA[] > ]> ]]><!---->]]<a>"
         );
 
@@ -859,7 +912,7 @@ mod tests {
 
     #[test]
     fn doctype_test() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r"<a><!DOCTYPE ab xx z> "
         );
         assert_oks!(for lex and buf ;
@@ -883,7 +936,7 @@ mod tests {
 
     #[test]
     fn tricky_comments() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r"<a><!-- C ->--></a>"
         );
         assert_oks!(for lex and buf ;
@@ -906,7 +959,7 @@ mod tests {
 
     #[test]
     fn doctype_with_internal_subset_test() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r#"<a><!DOCTYPE ab[<!ELEMENT ba ">>>"> ]> "#
         );
         assert_oks!(for lex and buf ;
@@ -946,7 +999,7 @@ mod tests {
 
     #[test]
     fn doctype_internal_pi_comment() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             "<!DOCTYPE a [\n<!ELEMENT l ANY> <!-- <?non?>--> <?pi > ?> \n]>"
         );
         assert_oks!(for lex and buf ;
@@ -1002,7 +1055,7 @@ mod tests {
     fn end_of_stream_handling_ok() {
         macro_rules! eof_check(
             ($data:expr ; $token:expr) => ({
-                let (mut lex, mut buf) = make_lex_and_buf($data);
+                let (mut lex, _buf) = make_lex_and_buf($data);
                 assert_oks!(for lex and buf ; $token);
                 assert_none!(for lex and buf);
             })
@@ -1019,7 +1072,7 @@ mod tests {
     fn end_of_stream_handling_error() {
         macro_rules! eof_check(
             ($data:expr; $r:expr, $c:expr) => ({
-                let (mut lex, mut buf) = make_lex_and_buf($data);
+                let (mut lex, _buf) = make_lex_and_buf($data);
                 assert_err!(for lex and buf expect row $r ; $c, "Unexpected end of stream");
                 assert_none!(for lex and buf);
             })
@@ -1037,12 +1090,12 @@ mod tests {
 
     #[test]
     fn error_in_comment_or_cdata_prefix() {
-        let (mut lex, mut buf) = make_lex_and_buf("<!x");
+        let (mut lex, _buf) = make_lex_and_buf("<!x");
         assert_err!(for lex and buf expect row 0 ; 0,
             "Unexpected token '<!' before 'x'"
         );
 
-        let (mut lex, mut buf) = make_lex_and_buf("<!x");
+        let (mut lex, _buf) = make_lex_and_buf("<!x");
         lex.disable_errors();
         assert_oks!(for lex and buf ;
             Token::Character('<')
@@ -1054,12 +1107,12 @@ mod tests {
 
     #[test]
     fn error_in_comment_started() {
-        let (mut lex, mut buf) = make_lex_and_buf("<!-\t");
+        let (mut lex, _buf) = make_lex_and_buf("<!-\t");
         assert_err!(for lex and buf expect row 0 ; 0,
             "Unexpected token '<!-' before '\t'"
         );
 
-        let (mut lex, mut buf) = make_lex_and_buf("<!-\t");
+        let (mut lex, _buf) = make_lex_and_buf("<!-\t");
         lex.disable_errors();
         assert_oks!(for lex and buf ;
             Token::Character('<')
@@ -1072,13 +1125,13 @@ mod tests {
 
     #[test]
     fn error_in_comment_two_dashes_not_at_end() {
-        let (mut lex, mut buf) = make_lex_and_buf("--x");
+        let (mut lex, _buf) = make_lex_and_buf("--x");
         lex.st = super::State::InsideComment;
         assert_err!(for lex and buf expect row 0; 0,
             "Unexpected token '--' before 'x'"
         );
 
-        let (mut lex, mut buf) = make_lex_and_buf("--x");
+        let (mut lex, _buf) = make_lex_and_buf("--x");
         assert_oks!(for lex and buf ;
             Token::Character('-')
             Token::Character('-')
@@ -1088,13 +1141,13 @@ mod tests {
 
     macro_rules! check_case(
         ($chunk:expr, $app:expr; $data:expr; $r:expr, $c:expr, $s:expr) => ({
-            let (mut lex, mut buf) = make_lex_and_buf($data);
+            let (mut lex, _buf) = make_lex_and_buf($data);
             assert_err!(for lex and buf expect row $r ; $c, $s);
 
-            let (mut lex, mut buf) = make_lex_and_buf($data);
+            let (mut lex, _buf) = make_lex_and_buf($data);
             lex.disable_errors();
             for c in $chunk.chars() {
-                assert_eq!(Ok(Token::Character(c)), lex.next_token(&mut buf));
+                assert_eq!(Ok(Token::Character(c)), lex.next_token());
             }
             assert_oks!(for lex and buf ;
                 Token::Character($app)
@@ -1131,7 +1184,7 @@ mod tests {
 
     #[test]
     fn issue_98_cdata_ending_with_right_bracket() {
-        let (mut lex, mut buf) = make_lex_and_buf(
+        let (mut lex, _buf) = make_lex_and_buf(
             r"<![CDATA[Foo [Bar]]]>"
         );
 

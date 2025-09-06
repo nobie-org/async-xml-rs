@@ -12,6 +12,12 @@ pub struct TextPosition {
     pub column: u64,
 }
 
+impl Default for TextPosition {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TextPosition {
     /// Creates a new position initialized to the beginning of the document
     #[inline]

@@ -10,9 +10,11 @@ use crate::reader::error::Error;
 use crate::reader::events::XmlEvent;
 use crate::reader::indexset::AttributesSet;
 use crate::reader::lexer::{Lexer, Token};
+use crate::reader::xml_read::XmlRead;
+#[cfg(feature = "async")]
+use crate::reader::xml_read::AsyncXmlRead;
 
 use std::collections::HashMap;
-use std::io::Read;
 
 macro_rules! gen_takes(
     ($($field:ident -> $method:ident, $t:ty, $def:expr);+) => (
@@ -58,9 +60,9 @@ type ElementStack = Vec<OwnedName>;
 pub type Result = super::Result<XmlEvent>;
 
 /// Pull-based XML parser.
-pub(crate) struct PullParser {
+pub(crate) struct PullParser<R> {
     config: ParserConfig,
-    lexer: Lexer,
+    lexer: Lexer<R>,
     st: State,
     state_after_reference: State,
     buf: String,
@@ -93,16 +95,105 @@ enum Encountered {
     Element,
 }
 
-impl PullParser {
-    /// Returns a new parser using the given config.
-    #[inline]
-    pub fn new(config: impl Into<ParserConfig>) -> Self {
-        Self::new_with_config(config.into())
+// Generic impl block for methods that don't require XmlRead trait
+impl<R> PullParser<R> {
+    #[cold]
+    #[allow(clippy::needless_pass_by_value)]
+    fn error(&self, e: SyntaxError) -> Result {
+        Err(Error::syntax(e.to_cow(), self.lexer.position()))
     }
 
     #[inline]
-    fn new_with_config(config: ParserConfig) -> Self {
-        let mut lexer = Lexer::new(&config);
+    fn next_pos(&mut self) {
+        // unfortunately calls to next_pos will never be perfectly balanced with push_pos,
+        // at very least because parse errors and EOF can happen unexpectedly without a prior push.
+        if !self.pos.is_empty() {
+            if self.pos.len() > 1 {
+                self.pos.remove(0);
+            } else {
+                self.pos[0] = self.lexer.position();
+            }
+        }
+    }
+
+    #[inline]
+    #[track_caller]
+    fn push_pos(&mut self) {
+        debug_assert!(self.pos.len() != self.pos.capacity(), "You've found a bug in xml-rs, caused by calls to push_pos() in states that don't end up emitting events.
+            This case is ignored in release mode, and merely causes document positions to be out of sync.
+            Please file a bug and include the XML document that triggers this assert.");
+
+        // it has capacity preallocated for more than it ever needs, so this reduces code size
+        if self.pos.len() != self.pos.capacity() {
+            self.pos.push(self.lexer.position());
+        } else if self.pos.len() > 1 {
+            self.pos.remove(0); // this mitigates the excessive push_pos() call
+        }
+    }
+
+    #[inline]
+    fn depth(&self) -> usize {
+        self.est.len()
+    }
+
+    #[inline]
+    fn buf_has_data(&self) -> bool {
+        !self.buf.is_empty()
+    }
+
+    #[inline]
+    fn take_buf(&mut self) -> String {
+        std::mem::take(&mut self.buf)
+    }
+
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn into_state(&mut self, st: State, ev: Option<Result>) -> Option<Result> {
+        self.st = st;
+        ev
+    }
+
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn into_state_continue(&mut self, st: State) -> Option<Result> {
+        self.into_state(st, None)
+    }
+
+    #[inline]
+    #[allow(clippy::wrong_self_convention)]
+    fn into_state_emit(&mut self, st: State, ev: Result) -> Option<Result> {
+        self.into_state(st, Some(ev))
+    }
+
+    #[inline]
+    fn is_valid_xml_char(&self, c: char) -> bool {
+        if Some(XmlVersion::Version11) == self.data.version {
+            is_xml11_char(c)
+        } else {
+            is_xml10_char(c)
+        }
+    }
+
+    #[inline]
+    fn is_valid_xml_char_not_restricted(&self, c: char) -> bool {
+        if Some(XmlVersion::Version11) == self.data.version {
+            is_xml11_char_not_restricted(c)
+        } else {
+            is_xml10_char(c)
+        }
+    }
+}
+
+impl<R: XmlRead> PullParser<R> {
+    /// Returns a new parser using the given config.
+    #[inline]
+    pub fn new(reader: R, config: impl Into<ParserConfig>) -> Self {
+        Self::new_with_config(reader, config.into())
+    }
+
+    #[inline]
+    fn new_with_config(reader: R, config: ParserConfig) -> Self {
+        let mut lexer = Lexer::new(reader, &config);
         if let Some(enc) = config.override_encoding {
             lexer.set_encoding(enc);
         }
@@ -174,9 +265,77 @@ impl PullParser {
             None
         }
     }
+
+    #[cfg(feature = "async")]
+    /// Returns next event read from the buffer asynchronously.
+    pub async fn next_async(&mut self) -> Result where R: AsyncXmlRead {
+        if let Some(ref ev) = self.final_result {
+            return ev.clone();
+        }
+
+        if let Some(ev) = self.next_event.take() {
+            return ev;
+        }
+
+        if self.pop_namespace {
+            self.pop_namespace = false;
+            self.nst.pop();
+        }
+
+        loop {
+            debug_assert!(self.next_event.is_none());
+            debug_assert!(!self.pop_namespace);
+
+            let next_token = self.lexer.next_token_async().await;
+
+            match next_token {
+                Ok(Token::Eof) => {
+                    self.next_pos();
+                    return self.handle_eof();
+                },
+                Ok(token) => match self.dispatch_token(token) {
+                    None => continue,
+                    Some(Ok(xml_event)) => {
+                        self.next_pos();
+                        return Ok(xml_event);
+                    },
+                    Some(Err(xml_error)) => {
+                        self.next_pos();
+                        return self.set_final_result(Err(xml_error));
+                    },
+                },
+                Err(lexer_error) => {
+                    self.next_pos();
+                    return self.set_final_result(Err(lexer_error));
+                },
+            }
+        }
+    }
+
+    pub(crate) fn reader(&self) -> &R {
+        &self.lexer.reader
+    }
+
+    pub(crate) fn reader_mut(&mut self) -> &mut R {
+        &mut self.lexer.reader
+    }
+
+    pub(crate) fn into_inner_reader(self) -> R {
+        self.lexer.reader
+    }
+
+    #[cfg(feature = "async")]
+    pub(crate) fn new_async(reader: R, config: impl Into<ParserConfig>) -> Self where R: AsyncXmlRead {
+        Self::new_with_config(reader, config.into())
+    }
+
+    #[cfg(feature = "async")]
+    pub(crate) fn into_inner_reader_async(self) -> R where R: AsyncXmlRead {
+        self.lexer.reader
+    }
 }
 
-impl Position for PullParser {
+impl<R> Position for PullParser<R> {
     /// Returns the position of the last event produced by the parser
     #[inline]
     fn position(&self) -> TextPosition {
@@ -270,9 +429,9 @@ pub(crate) enum DeclarationSubstate {
 
 #[derive(Copy, Clone, PartialEq)]
 enum QualifiedNameTarget {
-    AttributeNameTarget,
-    OpeningTagNameTarget,
-    ClosingTagNameTarget,
+    Attribute,
+    OpeningTag,
+    ClosingTag,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -318,12 +477,9 @@ struct MarkupData {
     attributes: AttributesSet,   // used to hold all accumulated attributes
 }
 
-impl PullParser {
-    /// Returns next event read from the given buffer.
-    ///
-    /// This method should be always called with the same buffer. If you call it
-    /// providing different buffers each time, the result will be undefined.
-    pub fn next<R: Read>(&mut self, r: &mut R) -> Result {
+impl<R: XmlRead> PullParser<R> {
+    /// Returns next event read from the buffer.
+    pub fn next(&mut self) -> Result where R: XmlRead {
         if let Some(ref ev) = self.final_result {
             return ev.clone();
         }
@@ -343,7 +499,7 @@ impl PullParser {
 
             // While lexer gives us Ok(maybe_token) -- we loop.
             // Upon having a complete XML-event -- we return from the whole function.
-            match self.lexer.next_token(r) {
+            match self.lexer.next_token() {
                 Ok(Token::Eof) => {
                     // Forward pos to the lexer head
                     self.next_pos();
@@ -397,40 +553,6 @@ impl PullParser {
         result
     }
 
-    #[cold]
-    #[allow(clippy::needless_pass_by_value)]
-    fn error(&self, e: SyntaxError) -> Result {
-        Err(Error::syntax(e.to_cow(), self.lexer.position()))
-    }
-
-    #[inline]
-    fn next_pos(&mut self) {
-        // unfortunately calls to next_pos will never be perfectly balanced with push_pos,
-        // at very least because parse errors and EOF can happen unexpectedly without a prior push.
-        if !self.pos.is_empty() {
-            if self.pos.len() > 1 {
-                self.pos.remove(0);
-            } else {
-                self.pos[0] = self.lexer.position();
-            }
-        }
-    }
-
-    #[inline]
-    #[track_caller]
-    fn push_pos(&mut self) {
-        debug_assert!(self.pos.len() != self.pos.capacity(), "You've found a bug in xml-rs, caused by calls to push_pos() in states that don't end up emitting events.
-            This case is ignored in release mode, and merely causes document positions to be out of sync.
-            Please file a bug and include the XML document that triggers this assert.");
-
-        // it has capacity preallocated for more than it ever needs, so this reduces code size
-        if self.pos.len() != self.pos.capacity() {
-            self.pos.push(self.lexer.position());
-        } else if self.pos.len() > 1 {
-            self.pos.remove(0); // this mitigates the excessive push_pos() call
-        }
-    }
-
     #[inline(never)]
     fn dispatch_token(&mut self, t: Token) -> Option<Result> {
         match self.st {
@@ -445,40 +567,6 @@ impl PullParser {
             State::InsideDeclaration(s)           => self.inside_declaration(t, s),
             State::DocumentStart                  => self.document_start(t),
         }
-    }
-
-    #[inline]
-    fn depth(&self) -> usize {
-        self.est.len()
-    }
-
-    #[inline]
-    fn buf_has_data(&self) -> bool {
-        !self.buf.is_empty()
-    }
-
-    #[inline]
-    fn take_buf(&mut self) -> String {
-        std::mem::take(&mut self.buf)
-    }
-
-    #[inline]
-    #[allow(clippy::wrong_self_convention)]
-    fn into_state(&mut self, st: State, ev: Option<Result>) -> Option<Result> {
-        self.st = st;
-        ev
-    }
-
-    #[inline]
-    #[allow(clippy::wrong_self_convention)]
-    fn into_state_continue(&mut self, st: State) -> Option<Result> {
-        self.into_state(st, None)
-    }
-
-    #[inline]
-    #[allow(clippy::wrong_self_convention)]
-    fn into_state_emit(&mut self, st: State, ev: Result) -> Option<Result> {
-        self.into_state(st, Some(ev))
     }
 
     /// Dispatches tokens in order to process qualified name. If qualified name cannot be parsed,
@@ -520,12 +608,12 @@ impl PullParser {
                 None
             },
 
-            Token::EqualsSign if target == QualifiedNameTarget::AttributeNameTarget => invoke_callback(self, t),
+                        Token::EqualsSign if target == QualifiedNameTarget::Attribute => invoke_callback(self, t),
 
-            Token::EmptyTagEnd if target == QualifiedNameTarget::OpeningTagNameTarget => invoke_callback(self, t),
+            Token::EmptyTagEnd if target == QualifiedNameTarget::OpeningTag => invoke_callback(self, t),
 
-            Token::TagEnd if target == QualifiedNameTarget::OpeningTagNameTarget ||
-                      target == QualifiedNameTarget::ClosingTagNameTarget => invoke_callback(self, t),
+            Token::TagEnd if target == QualifiedNameTarget::OpeningTag ||
+                             target == QualifiedNameTarget::ClosingTag => invoke_callback(self, t),
 
             Token::Character(c) if is_whitespace_char(c) => invoke_callback(self, t),
 
@@ -649,24 +737,6 @@ impl PullParser {
             Some(self.error(SyntaxError::UnexpectedClosingTag(format!("{name} != {op_name}").into())))
         }
     }
-
-    #[inline]
-    fn is_valid_xml_char(&self, c: char) -> bool {
-        if Some(XmlVersion::Version11) == self.data.version {
-            is_xml11_char(c)
-        } else {
-            is_xml10_char(c)
-        }
-    }
-
-    #[inline]
-    fn is_valid_xml_char_not_restricted(&self, c: char) -> bool {
-        if Some(XmlVersion::Version11) == self.data.version {
-            is_xml11_char_not_restricted(c)
-        } else {
-            is_xml10_char(c)
-        }
-    }
 }
 
 #[cfg(test)]
@@ -679,19 +749,15 @@ mod tests {
     use crate::reader::ParserConfig;
     use std::io::BufReader;
 
-    fn new_parser() -> PullParser {
-        PullParser::new(ParserConfig::new())
-    }
-
     macro_rules! expect_event(
-        ($r:expr, $p:expr, $t:pat) => (
-            match $p.next(&mut $r) {
+        ($p:expr, $t:pat) => (
+            match $p.next() {
                 $t => {}
                 e => panic!("Unexpected event: {e:?}\nExpected: {}", stringify!($t))
             }
         );
-        ($r:expr, $p:expr, $t:pat => $c:expr ) => (
-            match $p.next(&mut $r) {
+        ($p:expr, $t:pat => $c:expr ) => (
+            match $p.next() {
                 $t if $c => {}
                 e => panic!("Unexpected event: {e:?}\nExpected: {} if {}", stringify!($t), stringify!($c))
             }
@@ -700,93 +766,95 @@ mod tests {
 
     macro_rules! test_data(
         ($d:expr) => ({
+            use crate::reader::sync_reader::SyncReader;
             static DATA: &'static str = $d;
             let r = BufReader::new(DATA.as_bytes());
-            let p = new_parser();
-            (r, p)
+            let sync_reader = SyncReader::new(r);
+            let p = PullParser::new(sync_reader, ParserConfig::new());
+            p
         })
     );
 
     #[test]
     fn issue_3_semicolon_in_attribute_value() {
-        let (mut r, mut p) = test_data!(r#"
+        let mut p = test_data!(r#"
             <a attr="zzz;zzz" />
         "#);
 
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Ok(XmlEvent::StartElement { ref name, ref attributes, ref namespace }) =>
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Ok(XmlEvent::StartElement { ref name, ref attributes, ref namespace }) =>
             *name == OwnedName::local("a") &&
              attributes.len() == 1 &&
              attributes[0] == OwnedAttribute::new(OwnedName::local("attr"), "zzz;zzz") &&
              namespace.is_essentially_empty()
         );
-        expect_event!(r, p, Ok(XmlEvent::EndElement { ref name }) => *name == OwnedName::local("a"));
-        expect_event!(r, p, Ok(XmlEvent::EndDocument));
+        expect_event!(p, Ok(XmlEvent::EndElement { ref name }) => *name == OwnedName::local("a"));
+        expect_event!(p, Ok(XmlEvent::EndDocument));
     }
 
     #[test]
     fn issue_140_entity_reference_inside_tag() {
-        let (mut r, mut p) = test_data!(r"
+        let mut p = test_data!(r"
             <bla>&#9835;</bla>
         ");
 
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Ok(XmlEvent::StartElement { ref name, .. }) => *name == OwnedName::local("bla"));
-        expect_event!(r, p, Ok(XmlEvent::Characters(ref s)) => s == "\u{266b}");
-        expect_event!(r, p, Ok(XmlEvent::EndElement { ref name, .. }) => *name == OwnedName::local("bla"));
-        expect_event!(r, p, Ok(XmlEvent::EndDocument));
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Ok(XmlEvent::StartElement { ref name, .. }) => *name == OwnedName::local("bla"));
+        expect_event!(p, Ok(XmlEvent::Characters(ref s)) => s == "\u{266b}");
+        expect_event!(p, Ok(XmlEvent::EndElement { ref name, .. }) => *name == OwnedName::local("bla"));
+        expect_event!(p, Ok(XmlEvent::EndDocument));
     }
 
     #[test]
     fn issue_220_comment() {
-        let (mut r, mut p) = test_data!(r"<x><!-- <!--></x>");
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Ok(XmlEvent::StartElement { .. }));
-        expect_event!(r, p, Ok(XmlEvent::EndElement { .. }));
-        expect_event!(r, p, Ok(XmlEvent::EndDocument));
+        let mut p = test_data!(r"<x><!-- <!--></x>");
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Ok(XmlEvent::StartElement { .. }));
+        expect_event!(p, Ok(XmlEvent::EndElement { .. }));
+        expect_event!(p, Ok(XmlEvent::EndDocument));
 
-        let (mut r, mut p) = test_data!(r"<x><!-- <!---></x>");
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Ok(XmlEvent::StartElement { .. }));
-        expect_event!(r, p, Err(_)); // ---> is forbidden in comments
+        let mut p = test_data!(r"<x><!-- <!---></x>");
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Ok(XmlEvent::StartElement { .. }));
+        expect_event!(p, Err(_)); // ---> is forbidden in comments
 
-        let (mut r, mut p) = test_data!(r"<x><!--<text&x;> <!--></x>");
+        let mut p = test_data!(r"<x><!--<text&x;> <!--></x>");
         p.config.ignore_comments = false;
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Ok(XmlEvent::StartElement { .. }));
-        expect_event!(r, p, Ok(XmlEvent::Comment(s)) => s == "<text&x;> <!");
-        expect_event!(r, p, Ok(XmlEvent::EndElement { .. }));
-        expect_event!(r, p, Ok(XmlEvent::EndDocument));
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Ok(XmlEvent::StartElement { .. }));
+        expect_event!(p, Ok(XmlEvent::Comment(s)) => s == "<text&x;> <!");
+        expect_event!(p, Ok(XmlEvent::EndElement { .. }));
+        expect_event!(p, Ok(XmlEvent::EndDocument));
     }
 
     #[test]
     fn malformed_declaration_attrs() {
-        let (mut r, mut p) = test_data!(r#"<?xml version x="1.0"?>"#);
-        expect_event!(r, p, Err(_));
+        let mut p = test_data!(r#"<?xml version x="1.0"?>"#);
+        expect_event!(p, Err(_));
 
-        let (mut r, mut p) = test_data!(r#"<?xml version="1.0" version="1.0"?>"#);
-        expect_event!(r, p, Err(_));
+        let mut p = test_data!(r#"<?xml version="1.0" version="1.0"?>"#);
+        expect_event!(p, Err(_));
 
-        let (mut r, mut p) = test_data!(r#"<?xml version="1.0"encoding="utf-8"?>"#);
-        expect_event!(r, p, Err(_));
+        let mut p = test_data!(r#"<?xml version="1.0"encoding="utf-8"?>"#);
+        expect_event!(p, Err(_));
 
-        let (mut r, mut p) = test_data!(r#"<?xml version="1.0"standalone="yes"?>"#);
-        expect_event!(r, p, Err(_));
+        let mut p = test_data!(r#"<?xml version="1.0"standalone="yes"?>"#);
+        expect_event!(p, Err(_));
 
-        let (mut r, mut p) = test_data!(r#"<?xml version="1.0" encoding="utf-8"standalone="yes"?>"#);
-        expect_event!(r, p, Err(_));
+        let mut p = test_data!(r#"<?xml version="1.0" encoding="utf-8"standalone="yes"?>"#);
+        expect_event!(p, Err(_));
     }
 
     #[test]
     fn opening_tag_in_attribute_value() {
         use crate::reader::error::{SyntaxError, Error};
 
-        let (mut r, mut p) = test_data!(r#"
+        let mut p = test_data!(r#"
             <a attr="zzz<zzz" />
         "#);
 
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Err(ref e) =>
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Err(ref e) =>
             *e == Error::syntax(SyntaxError::UnexpectedOpeningTag.to_cow(), TextPosition { row: 1, column: 24 }));
     }
 
@@ -794,25 +862,25 @@ mod tests {
     fn processing_instruction_in_attribute_value() {
         use crate::reader::error::{SyntaxError, Error};
 
-        let (mut r, mut p) = test_data!(r#"
+        let mut p = test_data!(r#"
             <y F="<?abc"><x G="/">
         "#);
 
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Err(ref e) =>
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Err(ref e) =>
             *e == Error::syntax(SyntaxError::UnexpectedOpeningTag.to_cow(),
                 TextPosition { row: 1, column: 18 }));
     }
 
     #[test]
     fn reference_err() {
-        let (mut r, mut p) = test_data!(r"
+        let mut p = test_data!(r"
             <a>&&amp;</a>
         ");
 
-        expect_event!(r, p, Ok(XmlEvent::StartDocument { .. }));
-        expect_event!(r, p, Ok(XmlEvent::StartElement { .. }));
-        expect_event!(r, p, Err(_));
+        expect_event!(p, Ok(XmlEvent::StartDocument { .. }));
+        expect_event!(p, Ok(XmlEvent::StartElement { .. }));
+        expect_event!(p, Err(_));
     }
 
     #[test]

@@ -3,11 +3,12 @@ use std::fmt::Write;
 use crate::common::{is_name_char, is_name_start_char, is_whitespace_char};
 use crate::reader::error::SyntaxError;
 use crate::reader::lexer::Token;
+use crate::reader::xml_read::XmlRead;
 use crate::reader::XmlEvent;
 
 use super::{DoctypeSubstate, PullParser, QuoteToken, Result, State};
 
-impl PullParser {
+impl<R: XmlRead> PullParser<R> {
     pub fn inside_doctype(&mut self, t: Token, substate: DoctypeSubstate) -> Option<Result> {
         if let Some(ref mut doctype) = self.data.doctype {
             write!(doctype, "{t}").ok()?;

@@ -1,10 +1,12 @@
-use super::{PullParser, Result, State};
 use crate::common::{is_name_char, is_name_start_char, is_whitespace_char};
 use crate::reader::error::SyntaxError;
 use crate::reader::lexer::Token;
+use crate::reader::xml_read::XmlRead;
 use std::char;
 
-impl PullParser {
+use super::{PullParser, Result, State};
+
+impl<R: XmlRead> PullParser<R> {
     pub fn inside_reference(&mut self, t: Token) -> Option<Result> {
         match t {
             Token::Character(c) if !self.data.ref_data.is_empty() && is_name_char(c) ||

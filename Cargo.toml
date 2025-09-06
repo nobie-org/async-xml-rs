@@ -24,3 +24,13 @@ rustdoc-args = ["--generate-link-to-definition"]
 [package.metadata.release]
 tag-name = "{{version}}"
 tag-message = ""
+
+[features]
+default = ["async"]
+async = ["tokio"]
+
+[dependencies]
+tokio = { version = "1", features = ["io-util"], optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
